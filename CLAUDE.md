@@ -1,0 +1,167 @@
+# Knowledge Platform — Project Context
+
+## What This Is
+
+A self-hosted knowledge platform — personal second brain with a human-first authoring interface. Structured like Confluence, feels like Notion, owned entirely.
+
+Content spans all domains: work, personal, IT infrastructure, projects, business, learning. Anything worth remembering lives here.
+
+**Current version:** v1.0 — all code complete, ready for NAS deployment
+**Owner:** Simon Paynter (paynter.simon@gmail.com, GitHub: sspaynter)
+**Public URL:** `kb.ss-42.com` (Cloudflare tunnel — pending container creation)
+
+---
+
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Runtime | Node.js 20 (Alpine Docker) |
+| Framework | Express 4 (CommonJS require, modular routes) |
+| Database | PostgreSQL via `pg` — `knowledge_base` schema in `n8n-postgres` on NAS |
+| Auth | bcryptjs + cookie-parser — HttpOnly session cookies (browser) + Bearer token (API/Claude) |
+| File uploads | multer — disk storage, 50MB limit, allowlisted types |
+| Frontend | Vanilla JS ES6 modules — no build step, no framework |
+| Markdown | marked + DOMPurify (CDN UMD globals) |
+| Icons | Lucide (CDN UMD) — `window.lucide.createIcons()` after DOM changes |
+| Fonts | DM Sans (UI), Lora (article body), JetBrains Mono (metadata/code) |
+| CI/CD | GitHub Actions → GHCR → Watchtower auto-pull on NAS |
+| Hosting | QNAP NAS, Cloudflare tunnel at `kb.ss-42.com` |
+
+---
+
+## Database
+
+| Setting | Value |
+|---|---|
+| Container | `n8n-postgres` (QNAP NAS) |
+| Host — LAN (dev) | `192.168.86.18:32775` |
+| Host — Docker NAT (production container) | `10.0.3.12:5432` |
+| Database | `nocodb` |
+| Schema | `knowledge_base` |
+| App user | `kb_app` (limited — created by migration script) |
+| Superuser | `nocodb / nocodb2026` — used ONLY for initial migration |
+
+**Connection:** Always via `DATABASE_URL` env var.
+- Local dev: `postgresql://nocodb:nocodb2026@192.168.86.18:32775/nocodb`
+- Production: `postgresql://kb_app:<pass>@10.0.3.12:5432/nocodb`
+
+### Schema — 12 tables
+
+workspaces, sections, pages, assets, asset_versions, page_assets, templates, asset_relationships, api_tokens, users, sessions, settings
+
+---
+
+## Environment Variables
+
+```
+DATABASE_URL=postgresql://kb_app:<pass>@<host>:<port>/nocodb
+SESSION_SECRET=<32-byte-hex>
+UPLOAD_DIR=/app/uploads
+PORT=3000
+NODE_ENV=production
+HQ_URL=https://hq.ss-42.com
+```
+
+See `.env.example`. Never hardcode credentials.
+
+---
+
+## Key Files
+
+```
+knowledge-base/
+├── server.js                    # Express entry point, all routes mounted
+├── services/
+│   ├── database.js              # pg Pool, init(), getPool(), SCHEMA
+│   ├── auth.js                  # user/session/token management
+│   ├── workspaces.js            # workspace + section CRUD
+│   ├── pages.js                 # page tree, soft delete, reparent
+│   ├── assets.js                # asset CRUD, version snapshots
+│   └── relationships.js         # asset relationship queries
+├── middleware/
+│   ├── requireAuth.js           # Bearer token -> session; requireRole()
+│   ├── upload.js                # multer config
+│   └── errorHandler.js          # central error handler
+├── routes/
+│   ├── auth.js                  # /api/auth: login, register, logout, check
+│   ├── workspaces.js            # /api/workspaces + sections
+│   ├── pages.js                 # /api/pages: CRUD, tree, move
+│   ├── assets.js                # /api/assets: CRUD, versions
+│   ├── relationships.js         # /api/relationships
+│   ├── search.js                # /api/search: full-text
+│   ├── upload.js                # /api/upload
+│   └── admin.js                 # /api/admin: users, tokens, settings
+├── scripts/
+│   ├── migrate.sql              # Full schema DDL
+│   ├── run-migration.js         # npm run migrate
+│   ├── seed.js                  # npm run seed
+│   └── migrate-nocodb.js        # one-time NocoDB migration (17 docs moved)
+├── public/
+│   ├── index.html               # SPA shell, three-column layout
+│   ├── css/styles.css           # Complete design system
+│   └── js/
+│       ├── app.js / api.js / store.js / auth.js   # boot + nav
+│       ├── content.js / editor.js                 # page view + edit
+│       ├── search.js / map.js / settings.js        # overlays
+│       └── toast.js / utils.js                     # helpers
+├── tests/                       # Jest + Supertest, 33 tests, 11 suites
+├── Dockerfile                   # Node 20 Alpine, non-root user
+├── docker-compose.yml           # Local dev: port 3001, NAS DB
+├── .env.example                 # All vars documented
+└── .github/workflows/deploy.yml # push to main → GHCR :latest
+```
+
+---
+
+## Running the App
+
+**Local (bare node):**
+```bash
+DATABASE_URL=postgresql://nocodb:nocodb2026@192.168.86.18:32775/nocodb \
+UPLOAD_DIR=/tmp/kb-uploads node server.js
+```
+
+**Local (Docker):**
+```bash
+cp .env.example .env  # fill DATABASE_URL + SESSION_SECRET
+docker compose up --build
+# http://localhost:3001
+```
+
+**Tests:**
+```bash
+DATABASE_URL=postgresql://nocodb:nocodb2026@192.168.86.18:32775/nocodb \
+UPLOAD_DIR=/tmp/kb-test npm test
+```
+
+---
+
+## Frontend Security
+
+All DOM content via `textContent` only. No `innerHTML`.
+
+Markdown: `setMarkdownContent(element, md)` in `utils.js`:
+`marked.parse` → `DOMPurify.sanitize` → `DOMParser` → `appendChild`
+
+---
+
+## NAS Deployment Checklist
+
+1. `git push origin main` — triggers GitHub Actions build
+2. `DATABASE_URL=...nocodb superuser... npm run migrate`
+3. `DATABASE_URL=... npm run seed`
+4. Container Station: create from `ghcr.io/sspaynter/knowledge-base:latest`
+5. Set env vars (use `10.0.3.12:5432` for production DATABASE_URL)
+6. Cloudflare tunnel: `kb.ss-42.com` → container
+7. `curl https://kb.ss-42.com/api/health`
+
+Details: `docs/plans/impl-05-deployment.md`
+
+---
+
+## Background Skills (applied silently)
+
+- `code-quality` — coding standards
+- `infra-context` — DATABASE_URL pattern, Docker networking
+- `nas-ops` — NAS IPs, container ports
