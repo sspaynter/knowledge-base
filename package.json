@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "migrate": "node scripts/run-migration.js",
+    "seed": "node scripts/seed.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch --runInBand"
   },
@@ -14,6 +16,7 @@
     "cookie-parser": "^1.4.6",
     "express": "^4.21.0",
     "marked": "^15.0.0",
+    "multer": "^2.0.2",
     "pg": "^8.13.0"
   },
   "devDependencies": {

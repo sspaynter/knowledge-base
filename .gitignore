@@ -1,5 +1,7 @@
 node_modules/
 data/
+uploads/
 .env
 .DS_Store
 KICKOFF-PROMPT.md
+coverage/

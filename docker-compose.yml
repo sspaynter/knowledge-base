@@ -1,0 +1,29 @@
+version: "3.9"
+
+# Local development compose file.
+# Builds from source. Connects to NAS PostgreSQL directly — no local DB container.
+# For production NAS deployment, configure via Container Station (see docs/plans/impl-05-deployment.md).
+
+services:
+  knowledge-base:
+    build: .
+    container_name: knowledge-base-dev
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      # DATABASE_URL must be set in .env — see .env.example
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      # Persist uploads across container restarts
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
