@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knowledge Base</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Icons (Lucide UMD — exposes window.lucide) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <!-- Markdown + sanitizer (UMD — exposes window.marked and window.DOMPurify) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+
+  <!-- AUTH OVERLAY — shown until session confirmed -->
+  <div id="auth-overlay" class="overlay overlay--fullscreen" hidden>
+    <div class="auth-card" id="auth-card">
+      <div class="auth-logo">
+        <svg viewBox="0 0 40 40" class="logo-mark" aria-hidden="true">
+          <text x="2" y="30" font-family="DM Sans,sans-serif" font-size="28"
+                font-weight="600" fill="currentColor">42</text>
+        </svg>
+        <span class="auth-title">Knowledge Base</span>
+      </div>
+
+      <form id="login-form" class="auth-form" novalidate>
+        <h2 class="auth-heading">Sign in</h2>
+        <div class="field">
+          <label for="login-username" class="label">Username</label>
+          <input id="login-username" name="username" type="text"
+                 class="input" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="login-password" class="label">Password</label>
+          <input id="login-password" name="password" type="password"
+                 class="input" autocomplete="current-password" required />
+        </div>
+        <p id="login-error" class="auth-error" hidden></p>
+        <button type="submit" class="btn btn--primary btn--full">Sign in</button>
+        <p class="auth-switch">No account?
+          <button type="button" class="link-btn" data-action="show-register">Register</button>
+        </p>
+      </form>
+
+      <form id="register-form" class="auth-form" hidden novalidate>
+        <h2 class="auth-heading">Create account</h2>
+        <div class="field">
+          <label for="reg-display" class="label">Display name</label>
+          <input id="reg-display" name="displayName" type="text" class="input" required />
+        </div>
+        <div class="field">
+          <label for="reg-username" class="label">Username</label>
+          <input id="reg-username" name="username" type="text"
+                 class="input" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="reg-password" class="label">Password</label>
+          <input id="reg-password" name="password" type="password"
+                 class="input" autocomplete="new-password" required />
+        </div>
+        <p id="register-error" class="auth-error" hidden></p>
+        <button type="submit" class="btn btn--primary btn--full">Create account</button>
+        <p class="auth-switch">Have an account?
+          <button type="button" class="link-btn" data-action="show-login">Sign in</button>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP — hidden until auth confirmed -->
+  <div id="app" hidden>
+
+    <!-- TOP BAR -->
+    <header class="topbar" role="banner">
+      <div class="topbar__left">
+        <a href="#" id="hq-link" class="hq-link" title="SS42 HQ" aria-label="SS42 HQ">
+          <svg viewBox="0 0 40 40" class="logo-mark" aria-hidden="true">
+            <text x="2" y="30" font-family="DM Sans,sans-serif" font-size="28"
+                  font-weight="600" fill="currentColor">42</text>
+          </svg>
+        </a>
+        <span class="topbar__app-label">Knowledge Base</span>
+      </div>
+      <div class="topbar__centre">
+        <button class="search-trigger" id="search-trigger"
+                aria-label="Search (Cmd+K)" aria-keyshortcuts="Meta+K">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <span class="search-trigger__label">Search…</span>
+          <kbd class="search-trigger__kbd">⌘K</kbd>
+        </button>
+      </div>
+      <div class="topbar__right">
+        <button class="icon-btn" id="map-btn" title="Map view" aria-label="Map view">
+          <i data-lucide="network" aria-hidden="true"></i>
+        </button>
+        <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
+          <i data-lucide="settings" aria-hidden="true"></i>
+        </button>
+        <button class="icon-btn" id="theme-btn" title="Toggle theme" aria-label="Toggle theme">
+          <i data-lucide="moon" aria-hidden="true" id="theme-icon"></i>
+        </button>
+        <button class="avatar-btn" id="avatar-btn" aria-label="User menu">
+          <span id="avatar-initials" class="avatar">?</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- BODY -->
+    <div class="body-layout">
+
+      <!-- WORKSPACE RAIL (54px) -->
+      <nav class="rail" role="navigation" aria-label="Workspaces">
+        <ul class="rail__list" id="workspace-rail" role="list"></ul>
+        <div class="rail__footer">
+          <button class="rail__add-btn" id="add-workspace-btn"
+                  title="Add workspace" aria-label="Add workspace">
+            <i data-lucide="plus" aria-hidden="true"></i>
+          </button>
+        </div>
+      </nav>
+
+      <!-- SECTION SIDEBAR (244px) -->
+      <aside class="sidebar" role="complementary" aria-label="Sections and pages">
+        <div class="sidebar__header">
+          <span class="sidebar__workspace-label" id="sidebar-workspace-label"></span>
+        </div>
+        <nav class="sidebar__nav">
+          <ul class="section-list" id="section-list" role="list"></ul>
+        </nav>
+        <div class="sidebar__footer">
+          <button class="sidebar__add-btn" id="add-section-btn"
+                  title="Add section" aria-label="Add section">
+            <i data-lucide="plus" aria-hidden="true"></i>
+            <span>Add section</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- CONTENT PANE (flex) -->
+      <main class="content-pane" id="content-pane" role="main">
+        <div class="content-placeholder" id="content-placeholder">
+          <i data-lucide="book-open" aria-hidden="true"></i>
+          <p>Select a page to get started</p>
+        </div>
+      </main>
+
+    </div><!-- /body-layout -->
+  </div><!-- /app -->
+
+  <!-- SEARCH OVERLAY -->
+  <div id="search-overlay" class="overlay overlay--search" hidden
+       role="dialog" aria-modal="true" aria-label="Search">
+    <div class="search-modal">
+      <div class="search-modal__input-wrap">
+        <i data-lucide="search" class="search-modal__icon" aria-hidden="true"></i>
+        <input type="text" id="search-input" class="search-modal__input"
+               placeholder="Search pages and assets…" autocomplete="off"
+               aria-label="Search" aria-controls="search-results" />
+        <button class="search-modal__close" id="search-close" aria-label="Close search">
+          <kbd>Esc</kbd>
+        </button>
+      </div>
+      <div class="search-modal__filters" id="search-filters">
+        <button class="filter-chip filter-chip--active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="pages">Pages</button>
+        <button class="filter-chip" data-filter="assets">Assets</button>
+      </div>
+      <ul class="search-results" id="search-results" role="listbox"
+          aria-label="Search results"></ul>
+      <p class="search-empty" id="search-empty" hidden>No results found</p>
+    </div>
+  </div>
+
+  <!-- SETTINGS OVERLAY -->
+  <div id="settings-overlay" class="overlay overlay--panel" hidden
+       role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="settings-panel">
+      <div class="settings-panel__header">
+        <h2 class="settings-panel__title">Settings</h2>
+        <button class="icon-btn" id="settings-close" aria-label="Close settings">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="settings-panel__layout">
+        <nav class="settings-panel__nav">
+          <button class="settings-nav-item settings-nav-item--active"
+                  data-section="workspaces">Workspaces</button>
+          <button class="settings-nav-item" data-section="users">Users &amp; Roles</button>
+          <button class="settings-nav-item" data-section="tokens">API Tokens</button>
+          <button class="settings-nav-item" data-section="account">Account</button>
+          <button class="settings-nav-item settings-nav-item--danger"
+                  data-section="danger">Danger Zone</button>
+        </nav>
+        <div class="settings-panel__body" id="settings-body">
+          <!-- Populated by settings.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR OVERLAY -->
+  <div id="editor-overlay" class="overlay overlay--editor" hidden
+       role="dialog" aria-modal="true" aria-label="Page editor">
+    <div class="editor-modal">
+      <div class="editor-modal__header">
+        <input type="text" id="editor-title" class="editor-title-input"
+               placeholder="Page title" aria-label="Page title" />
+        <div class="editor-modal__actions">
+          <button class="btn btn--ghost" id="editor-discard">Discard</button>
+          <button class="btn btn--primary" id="editor-save">Save</button>
+        </div>
+      </div>
+      <div class="editor-modal__body">
+        <div class="editor-split">
+          <textarea id="editor-textarea" class="editor-textarea"
+                    placeholder="Write in Markdown…"
+                    aria-label="Page content editor"
+                    spellcheck="true"></textarea>
+          <div class="editor-preview" id="editor-preview"
+               aria-label="Preview" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"
+       role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- App entry point -->
+  <script type="module" src="/js/app.js"></script>
+
+</body>
+</html>
