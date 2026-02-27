@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Base — Design Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+
+    /* ── Tokens: dark (default) ─────────────────────── */
+    [data-theme="dark"] {
+      --base:        #0d0d11;
+      --surface:     #13131a;
+      --surface-2:   #18181f;
+      --elevated:    #1e1e28;
+      --border:      #28283a;
+      --border-soft: #1c1c26;
+      --text-1:      #f0ede8;
+      --text-2:      #8c8ca0;
+      --text-3:      #52526a;
+      --accent:      #2dd4bf;
+      --accent-bg:   rgba(45,212,191,0.09);
+      --accent-glow: rgba(45,212,191,0.16);
+      --accent-dark: #0d9488;
+      --green:       #4ade80;
+      --green-bg:    rgba(74,222,128,0.07);
+      --purple:      #a78bfa;
+      --purple-bg:   rgba(167,139,250,0.07);
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.5);
+      --shadow:      0 4px 16px rgba(0,0,0,0.5);
+      --logo-bg:     #1a2e2c;
+    }
+
+    /* ── Tokens: light ──────────────────────────────── */
+    [data-theme="light"] {
+      --base:        #f5f5f7;
+      --surface:     #ffffff;
+      --surface-2:   #f0f0f5;
+      --elevated:    #e8e8f0;
+      --border:      #d4d4de;
+      --border-soft: #e4e4ec;
+      --text-1:      #111118;
+      --text-2:      #6a6a80;
+      --text-3:      #a0a0b8;
+      --accent:      #0d9488;
+      --accent-bg:   rgba(13,148,136,0.08);
+      --accent-glow: rgba(13,148,136,0.15);
+      --accent-dark: #0f766e;
+      --green:       #16a34a;
+      --green-bg:    rgba(22,163,74,0.08);
+      --purple:      #7c3aed;
+      --purple-bg:   rgba(124,58,237,0.07);
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
+      --shadow:      0 4px 16px rgba(0,0,0,0.1);
+      --logo-bg:     #ccfbf1;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--base);
+      color: var(--text-1);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* Lucide icons: inherit size from container */
+    [data-lucide] { display: inline-block; vertical-align: middle; }
+
+    /* ── Top bar ─────────────────────────────────────── */
+    .topbar {
+      height: 50px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-shrink: 0;
+      min-width: 180px;
+    }
+
+    .logo-mark {
+      width: 28px; height: 28px;
+      background: var(--logo-bg);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: opacity 0.14s;
+    }
+
+    .logo-mark:hover { opacity: 0.75; }
+    .logo-mark svg { color: var(--accent); }
+
+    .brand-app {
+      font-size: 13px; font-weight: 600;
+      letter-spacing: -0.2px;
+      color: var(--text-1); line-height: 1.2;
+    }
+
+    .search-wrap {
+      flex: 1;
+      max-width: 440px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 7px 46px 7px 36px;
+      color: var(--text-1);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.2s;
+    }
+
+    .search-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      background: var(--surface);
+    }
+
+    .search-wrap input::placeholder { color: var(--text-3); }
+
+    .search-ico {
+      position: absolute; left: 13px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-3); pointer-events: none;
+    }
+
+    .search-kbd {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text-3);
+      background: var(--elevated); border: 1px solid var(--border);
+      border-radius: 5px; padding: 1px 6px; pointer-events: none;
+    }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .icon-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px; border: none;
+      background: transparent; color: var(--text-2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.14s, color 0.14s;
+    }
+
+    .icon-btn:hover {
+      background: var(--elevated); color: var(--text-1);
+    }
+
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      color: #072020;
+      cursor: pointer; flex-shrink: 0; margin-left: 4px;
+    }
+
+    /* ── Layout body ─────────────────────────────────── */
+    .body {
+      display: flex; flex: 1; overflow: hidden;
+    }
+
+    /* ── Workspace rail ──────────────────────────────── */
+    .rail {
+      width: 54px;
+      background: var(--surface);
+      border-right: 1px solid var(--border-soft);
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding: 8px 0 12px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .rail-logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--logo-bg);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .rail-logo svg { color: var(--accent); }
+
+    .ws-item {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.14s, color 0.14s;
+      position: relative;
+      color: var(--text-3);
+    }
+
+    .ws-item:hover { background: var(--elevated); color: var(--text-2); }
+
+    .ws-item.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .ws-item.active::before {
+      content: '';
+      position: absolute; left: -1px;
+      top: 9px; bottom: 9px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    /* Tooltip */
+    .ws-item[data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute; left: calc(100% + 10px); top: 50%;
+      transform: translateY(-50%);
+      background: var(--elevated); border: 1px solid var(--border);
+      border-radius: 8px; padding: 4px 10px;
+      font-size: 12px; font-family: 'DM Sans', sans-serif;
+      color: var(--text-1); white-space: nowrap;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .rail-sep {
+      width: 20px; height: 1px;
+      background: var(--border-soft); margin: 4px 0;
+    }
+
+    .rail-add {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1.5px dashed var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-3);
+      cursor: pointer; margin-top: auto;
+      transition: border-color 0.14s, color 0.14s;
+    }
+
+    .rail-add:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    .sidebar {
+      width: 244px;
+      background: var(--surface);
+      border-right: 1px solid var(--border-soft);
+      display: flex; flex-direction: column;
+      overflow-y: auto; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 3px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+
+    .sidebar-label {
+      padding: 14px 16px 8px;
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-3);
+    }
+
+    /* Section */
+    .sec-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px 7px 10px;
+      cursor: pointer;
+      transition: background 0.12s;
+      border-radius: 8px;
+      margin: 0 6px;
+      user-select: none;
+    }
+
+    .sec-head:hover { background: var(--elevated); }
+
+    .sec-arrow {
+      color: var(--text-3);
+      transition: transform 0.2s; flex-shrink: 0;
+      display: flex; align-items: center;
+    }
+
+    .sec-arrow.open { transform: rotate(90deg); }
+
+    .sec-icon {
+      color: var(--text-2); flex-shrink: 0;
+      display: flex; align-items: center;
+    }
+
+    .sec-name {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-1); flex: 1; letter-spacing: -0.15px;
+    }
+
+    .sec-count {
+      font-size: 11px; color: var(--text-3);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sec-pages { overflow: hidden; }
+    .sec-pages.closed { display: none; }
+
+    /* Page items */
+    .pg {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px;
+      padding-left: calc(var(--d,1) * 14px + 16px);
+      cursor: pointer;
+      border-radius: 8px;
+      margin: 1px 6px;
+      transition: background 0.11s, color 0.11s;
+      position: relative;
+      font-size: 13px; color: var(--text-2);
+    }
+
+    .pg:hover { background: var(--elevated); color: var(--text-1); }
+
+    .pg.active {
+      background: var(--accent-bg);
+      color: var(--text-1);
+    }
+
+    .pg.active::before {
+      content: ''; position: absolute; left: -6px;
+      top: 6px; bottom: 6px; width: 2px;
+      background: var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .pg-arrow {
+      color: var(--text-3); flex-shrink: 0;
+      display: flex; align-items: center;
+      transition: transform 0.18s;
+    }
+
+    .pg-arrow.open { transform: rotate(90deg); }
+    .pg-arrow.none { opacity: 0; pointer-events: none; }
+
+    .pg-icon {
+      color: var(--text-2); flex-shrink: 0;
+      display: flex; align-items: center;
+    }
+
+    .pg.active .pg-icon { color: var(--accent); }
+
+    .pg-name {
+      flex: 1; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+      letter-spacing: -0.1px;
+    }
+
+    .sidebar-foot {
+      padding: 10px 12px 14px;
+      margin-top: auto;
+    }
+
+    .add-section {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 12px;
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      font-size: 12px; color: var(--text-3);
+      cursor: pointer;
+      transition: border-color 0.14s, color 0.14s;
+    }
+
+    .add-section svg { flex-shrink: 0; }
+    .add-section:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Content pane ────────────────────────────────── */
+    .content {
+      flex: 1; display: flex;
+      flex-direction: column; overflow: hidden;
+      background: var(--base);
+      transition: background 0.2s;
+    }
+
+    .content-head {
+      padding: 18px 36px 0;
+      flex-shrink: 0;
+    }
+
+    .breadcrumb {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12px; color: var(--text-3);
+      margin-bottom: 12px;
+    }
+
+    .breadcrumb span {
+      cursor: pointer; transition: color 0.12s;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .breadcrumb span:hover { color: var(--text-2); }
+    .breadcrumb .sep { opacity: 0.4; pointer-events: none; }
+    .breadcrumb .cur { color: var(--text-2); cursor: default; }
+
+    .doc-title-row {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .doc-title {
+      font-size: 28px; font-weight: 600;
+      letter-spacing: -0.7px; line-height: 1.15;
+      color: var(--text-1);
+    }
+
+    .head-actions {
+      display: flex; align-items: center; gap: 6px;
+      flex-shrink: 0; padding-top: 4px;
+    }
+
+    .btn-edit {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      background: var(--accent-bg);
+      border: 1px solid rgba(45,212,191,0.25);
+      border-radius: 10px;
+      color: var(--accent);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      transition: background 0.14s, border-color 0.14s;
+      white-space: nowrap;
+    }
+
+    .btn-edit:hover {
+      background: var(--accent-glow);
+      border-color: rgba(45,212,191,0.45);
+    }
+
+    .meta-row {
+      display: flex; align-items: center;
+      gap: 7px; flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 500;
+      border: 1px solid;
+    }
+
+    .b-active  { color: var(--green);  border-color: rgba(74,222,128,0.25);  background: var(--green-bg); }
+    .b-skill   { color: var(--accent); border-color: rgba(45,212,191,0.25);  background: var(--accent-bg); }
+    .b-global  { color: var(--purple); border-color: rgba(167,139,250,0.25); background: var(--purple-bg); }
+
+    .meta-mono {
+      font-size: 11.5px; color: var(--text-3);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .divider {
+      height: 1px; background: var(--border-soft);
+      margin: 0 36px 26px;
+    }
+
+    .scroll-body {
+      flex: 1; overflow-y: auto;
+      padding: 0 36px 60px;
+    }
+
+    .scroll-body::-webkit-scrollbar { width: 4px; }
+    .scroll-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .scroll-body::-webkit-scrollbar-track { background: transparent; }
+
+    .prose { max-width: 700px; }
+
+    /* Typography */
+    .prose p {
+      font-family: 'Lora', Georgia, serif;
+      font-size: 15.5px; line-height: 1.82;
+      color: var(--text-1); margin-bottom: 18px;
+    }
+
+    .prose h2 {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 17px; font-weight: 600;
+      letter-spacing: -0.3px;
+      color: var(--text-1); margin: 36px 0 12px;
+    }
+
+    .prose h2:first-child { margin-top: 0; }
+
+    .prose code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px; color: var(--accent);
+      background: var(--elevated); border: 1px solid var(--border);
+      border-radius: 5px; padding: 1px 6px;
+    }
+
+    /* Table */
+    .prose table {
+      width: 100%; border-collapse: collapse;
+      margin: 20px 0; font-size: 14px;
+    }
+
+    .prose th {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3); padding: 8px 12px;
+      border-bottom: 1px solid var(--border); text-align: left;
+    }
+
+    .prose td {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px; color: var(--text-1);
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border-soft);
+      vertical-align: top; line-height: 1.5;
+    }
+
+    .prose tr:last-child td { border-bottom: none; }
+    .prose tr:hover td { background: var(--surface-2); }
+
+    /* Tags */
+    .tag-row {
+      display: flex; flex-wrap: wrap;
+      gap: 6px; margin: 20px 0;
+    }
+
+    .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--text-3);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 5px; padding: 3px 8px;
+    }
+
+    /* Changelog */
+    .changelog { margin: 4px 0 28px; }
+
+    .cl-entry {
+      display: flex; gap: 18px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .cl-entry:last-child { border-bottom: none; }
+
+    .cl-ver {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--accent);
+      width: 34px; flex-shrink: 0; padding-top: 2px;
+    }
+
+    .cl-date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--text-3); margin-bottom: 4px;
+    }
+
+    .cl-text {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px; color: var(--text-1); line-height: 1.55;
+    }
+
+    .cl-by {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--text-3); margin-top: 5px;
+    }
+
+    /* Assets panel */
+    .assets-panel {
+      margin-top: 38px;
+      border-top: 1px solid var(--border-soft);
+      padding-top: 20px;
+    }
+
+    .ap-head {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px; cursor: pointer;
+    }
+
+    .ap-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3);
+    }
+
+    .ap-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .asset {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .asset:hover { background: var(--elevated); border-color: var(--border); }
+
+    .asset-ico {
+      color: var(--text-2); flex-shrink: 0;
+      display: flex; align-items: center;
+    }
+
+    .asset-info { flex: 1; min-width: 0; }
+
+    .asset-name {
+      font-size: 13px; color: var(--text-1);
+      font-weight: 500; margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .asset-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--text-3);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .asset-chev {
+      color: var(--text-3); flex-shrink: 0;
+      display: flex; align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="logo-mark" title="Back to HQ">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6l5 6H4v3h9"/><line x1="17" y1="5" x2="17" y2="19"/>
+      </svg>
+    </div>
+    <span class="brand-app">Knowledge Base</span>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-ico">
+      <i data-lucide="search" style="width:14px;height:14px"></i>
+    </span>
+    <input type="text" placeholder="Search across everything…">
+    <span class="search-kbd">⌘K</span>
+  </div>
+
+  <div class="topbar-right">
+    <button class="icon-btn" title="Settings">
+      <i data-lucide="settings" style="width:16px;height:16px"></i>
+    </button>
+    <button class="icon-btn" id="theme-toggle" title="Toggle theme" onclick="toggleTheme()">
+      <i data-lucide="sun" style="width:16px;height:16px" id="theme-icon-light"></i>
+      <i data-lucide="moon" style="width:16px;height:16px;display:none" id="theme-icon-dark"></i>
+    </button>
+    <div class="avatar">SP</div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- Workspace rail -->
+  <div class="rail">
+    <div class="rail-logo" title="SS42 Knowledge Base">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+        <path d="M4 6l5 6H4v3h9"/><line x1="17" y1="5" x2="17" y2="19"/>
+      </svg>
+    </div>
+
+    <div class="ws-item active" data-tip="IT &amp; Projects">
+      <i data-lucide="monitor" style="width:18px;height:18px"></i>
+    </div>
+    <div class="ws-item" data-tip="Personal">
+      <i data-lucide="user" style="width:18px;height:18px"></i>
+    </div>
+    <div class="ws-item" data-tip="Work">
+      <i data-lucide="briefcase" style="width:18px;height:18px"></i>
+    </div>
+    <div class="ws-item" data-tip="Learning">
+      <i data-lucide="book-open" style="width:18px;height:18px"></i>
+    </div>
+    <div class="rail-sep"></div>
+    <div class="rail-add" data-tip="Add workspace">
+      <i data-lucide="plus" style="width:14px;height:14px"></i>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-label">IT &amp; Projects</div>
+
+    <!-- Claude section — expanded -->
+    <div class="sec-group">
+      <div class="sec-head" onclick="toggleSec(this)">
+        <span class="sec-arrow open">
+          <i data-lucide="chevron-right" style="width:13px;height:13px"></i>
+        </span>
+        <span class="sec-icon">
+          <i data-lucide="bot" style="width:15px;height:15px"></i>
+        </span>
+        <span class="sec-name">Claude</span>
+        <span class="sec-count">12</span>
+      </div>
+      <div class="sec-pages">
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="file-text" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Overview</span>
+        </div>
+        <div class="pg" style="--d:1" onclick="togglePg(this)">
+          <span class="pg-arrow open"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="folder" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Skills</span>
+        </div>
+        <div class="pg active" style="--d:2">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="zap" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">simon-context</span>
+        </div>
+        <div class="pg" style="--d:2">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="zap" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">app-scaffold</span>
+        </div>
+        <div class="pg" style="--d:2">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="zap" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">infra-context</span>
+        </div>
+        <div class="pg" style="--d:2">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="zap" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">nas-ops</span>
+        </div>
+        <div class="pg" style="--d:2">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="zap" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">code-quality</span>
+        </div>
+        <div class="pg" style="--d:1" onclick="togglePg(this)">
+          <span class="pg-arrow"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="folder" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Agents</span>
+        </div>
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="settings-2" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Setup &amp; Config</span>
+        </div>
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="scroll-text" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Session Log</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects — collapsed -->
+    <div class="sec-group">
+      <div class="sec-head" onclick="toggleSec(this)">
+        <span class="sec-arrow">
+          <i data-lucide="chevron-right" style="width:13px;height:13px"></i>
+        </span>
+        <span class="sec-icon">
+          <i data-lucide="layout-grid" style="width:15px;height:15px"></i>
+        </span>
+        <span class="sec-name">Projects</span>
+        <span class="sec-count">4</span>
+      </div>
+      <div class="sec-pages closed">
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="package" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Lifeboard</span>
+        </div>
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="briefcase" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Job App</span>
+        </div>
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="book" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Knowledge Base</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Infrastructure — collapsed -->
+    <div class="sec-group">
+      <div class="sec-head" onclick="toggleSec(this)">
+        <span class="sec-arrow">
+          <i data-lucide="chevron-right" style="width:13px;height:13px"></i>
+        </span>
+        <span class="sec-icon">
+          <i data-lucide="server" style="width:15px;height:15px"></i>
+        </span>
+        <span class="sec-name">Infrastructure</span>
+        <span class="sec-count">8</span>
+      </div>
+      <div class="sec-pages closed">
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="hard-drive" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">NAS Setup</span>
+        </div>
+        <div class="pg" style="--d:1">
+          <span class="pg-arrow none"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+          <span class="pg-icon"><i data-lucide="wifi" style="width:13px;height:13px"></i></span>
+          <span class="pg-name">Network</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="add-section">
+        <i data-lucide="plus" style="width:13px;height:13px"></i>
+        Add section
+      </div>
+    </div>
+  </div>
+
+  <!-- Content pane -->
+  <div class="content">
+    <div class="content-head">
+      <div class="breadcrumb">
+        <span><i data-lucide="monitor" style="width:12px;height:12px"></i> IT &amp; Projects</span>
+        <span class="sep"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+        <span>Claude</span>
+        <span class="sep"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+        <span>Skills</span>
+        <span class="sep"><i data-lucide="chevron-right" style="width:11px;height:11px"></i></span>
+        <span class="cur">simon-context</span>
+      </div>
+
+      <div class="doc-title-row">
+        <h1 class="doc-title">simon-context</h1>
+        <div class="head-actions">
+          <button class="btn-edit">
+            <i data-lucide="pencil" style="width:14px;height:14px"></i>
+            Edit page
+          </button>
+          <button class="icon-btn">
+            <i data-lucide="more-horizontal" style="width:16px;height:16px"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <span class="badge b-active">
+          <i data-lucide="circle" style="width:8px;height:8px;fill:currentColor"></i>
+          Active
+        </span>
+        <span class="badge b-skill">
+          <i data-lucide="zap" style="width:10px;height:10px"></i>
+          Skill
+        </span>
+        <span class="badge b-global">
+          <i data-lucide="globe" style="width:10px;height:10px"></i>
+          Global
+        </span>
+        <span class="meta-mono">v2.4 · modified 2026-02-24</span>
+      </div>
+    </div>
+    <div class="divider"></div>
+
+    <div class="scroll-body">
+      <div class="prose">
+
+        <p>The <code>simon-context</code> skill defines Simon's working context, cognitive style, communication preferences, and response format guidelines. It loads at the start of every session to calibrate tone, structure, and execution approach across all projects — without Simon needing to explain it each time.</p>
+
+        <h2>Purpose</h2>
+        <p>This skill is Claude's operating manual for Simon. It encodes everything Claude needs to know about how Simon thinks, what he finds useful, and how to communicate effectively — reducing cognitive overhead in every session.</p>
+
+        <h2>What it covers</h2>
+        <table>
+          <thead>
+            <tr><th>Area</th><th>Detail</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Cognitive style</td><td>Architectural and systemic thinker. Learns by doing. ADHD — benefits from structured breakdowns and visible progress markers.</td></tr>
+            <tr><td>Communication</td><td>Plain English, no corporate speak. Direct headings. Short paragraphs. Tables where helpful. Challenge weak logic.</td></tr>
+            <tr><td>Response format</td><td>Brief context → clear recommendation → structured breakdown → risks → concrete next step.</td></tr>
+            <tr><td>Writing style</td><td>Direct, reflective, with conviction. No buzzwords. Structural clarity over prose elegance.</td></tr>
+            <tr><td>Session close</td><td>Update the project planning doc with all decisions, paths, and credentials. Single source of truth — not memory files.</td></tr>
+          </tbody>
+        </table>
+
+        <h2>How it loads</h2>
+        <p>Referenced from the global <code>~/.claude/CLAUDE.md</code>. Loads automatically at the start of every Claude Code session. No manual invocation needed.</p>
+
+        <div class="tag-row">
+          <span class="tag">adhd</span>
+          <span class="tag">communication</span>
+          <span class="tag">context</span>
+          <span class="tag">global</span>
+          <span class="tag">session-init</span>
+          <span class="tag">working-style</span>
+        </div>
+
+        <h2>Change log</h2>
+        <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v2.4</div>
+            <div class="cl-body">
+              <div class="cl-date">2026-02-24</div>
+              <div class="cl-text">Added session-close protocol: update planning doc, offer skill updates. Defined which skills to offer after each session type.</div>
+              <div class="cl-by">
+                <i data-lucide="user" style="width:11px;height:11px"></i>
+                claude + simon
+              </div>
+            </div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v2.3</div>
+            <div class="cl-body">
+              <div class="cl-date">2026-01-18</div>
+              <div class="cl-text">Expanded cognitive and working style section. Added ADHD context, momentum-vs-perfection principle, and health focus notes.</div>
+              <div class="cl-by">
+                <i data-lucide="user" style="width:11px;height:11px"></i>
+                simon
+              </div>
+            </div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v2.0</div>
+            <div class="cl-body">
+              <div class="cl-date">2025-12-04</div>
+              <div class="cl-text">Major restructure. Split into Background, Cognitive Style, Communication, Execution Framework, and Response Format sections.</div>
+              <div class="cl-by">
+                <i data-lucide="bot" style="width:11px;height:11px"></i>
+                claude
+              </div>
+            </div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.0</div>
+            <div class="cl-body">
+              <div class="cl-date">2025-10-11</div>
+              <div class="cl-text">Initial version. Basic working style and communication preferences captured.</div>
+              <div class="cl-by">
+                <i data-lucide="user" style="width:11px;height:11px"></i>
+                simon
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assets panel -->
+        <div class="assets-panel">
+          <div class="ap-head">
+            <span class="ap-title">Linked assets (2)</span>
+            <i data-lucide="chevron-down" style="width:13px;height:13px;color:var(--text-3)"></i>
+          </div>
+          <div class="ap-list">
+            <div class="asset">
+              <span class="asset-ico">
+                <i data-lucide="file-code" style="width:17px;height:17px"></i>
+              </span>
+              <div class="asset-info">
+                <div class="asset-name">SKILL.md</div>
+                <div class="asset-sub">~/.claude/skills/simon-context/SKILL.md · v2.4</div>
+              </div>
+              <span class="asset-chev">
+                <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
+              </span>
+            </div>
+            <div class="asset">
+              <span class="asset-ico">
+                <i data-lucide="clipboard-list" style="width:17px;height:17px"></i>
+              </span>
+              <div class="asset-info">
+                <div class="asset-name">Session: Knowledge Base spec</div>
+                <div class="asset-sub">decision · 2026-02-27 · this session</div>
+              </div>
+              <span class="asset-chev">
+                <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Init Lucide icons
+  lucide.createIcons();
+
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('theme-icon-light').style.display = isDark ? 'none' : '';
+    document.getElementById('theme-icon-dark').style.display  = isDark ? '' : 'none';
+  }
+
+  // Section toggle
+  function toggleSec(head) {
+    const arrow = head.querySelector('.sec-arrow');
+    const pages = head.nextElementSibling;
+    arrow.classList.toggle('open');
+    pages.classList.toggle('closed');
+  }
+
+  // Page expand
+  function togglePg(el) {
+    const arrow = el.querySelector('.pg-arrow');
+    arrow.classList.toggle('open');
+  }
+</script>
+
+</body>
+</html>
