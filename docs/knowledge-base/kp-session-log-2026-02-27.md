@@ -226,3 +226,129 @@ NODE_ENV=production
 HQ_URL=https://hq.ss-42.com
 ```
 
+---
+
+## Session 6 — NAS Deployment (2026-02-27)
+
+**Status:** COMPLETE. Knowledge Platform is live at `https://kb.ss-42.com`.
+
+### What was done
+
+| Step | Detail |
+|---|---|
+| `kb_app` DB user created | Limited postgres user, granted full access to `knowledge_base` schema only. Password stored in CLAUDE.md. |
+| Watchtower refactored | Changed from container-name-scoped to label-based (`WATCHTOWER_LABEL_ENABLE=true`). Now a shared service for all GHCR containers. Lifeboard containers updated with opt-in label. |
+| GitHub repo created | `github.com/sspaynter/knowledge-base` (public). Remote added, `main` pushed. |
+| CI build | GitHub Actions `deploy.yml` ran, built image, pushed to `ghcr.io/sspaynter/knowledge-base:latest` in 48s. Duplicate workflow `build-and-push.yml` removed. |
+| Container created on NAS | Via `docker run` over SSH. External port `32779`, NAT IP `10.0.3.8`. Watchtower label applied. |
+| LAN smoke test | `curl http://192.168.86.18:32779/api/health` → `{"status":"ok"}` ✅ |
+| Cloudflare tunnel | Public hostname `kb.ss-42.com` → `http://192.168.86.18:32779` added to existing tunnel. |
+| Cloudflare Access policy | Initially email OTP, then Google OAuth added as identity provider (Client ID from Google Cloud Console). Both methods active. Only `paynter.simon@gmail.com` on allow list. |
+| Admin account created | First user registered → auto-assigned admin role. |
+| Registration locked | `allow_registration` set to `false` in `knowledge_base.settings`. New users can only be created by admin via admin panel. |
+
+### Infrastructure changes
+
+- `gh` CLI installed via Homebrew
+- `gh auth login` completed — GitHub CLI authenticated as `sspaynter`
+- Google OAuth app created in Google Cloud project `cloudflare-access-488710`
+- Google added as Cloudflare Zero Trust identity provider (Integrations → Identity providers)
+- Watchtower compose file updated at `/share/CACHEDEV1_DATA/Container/lifeboard/docker-compose.yml`
+
+### Documents updated this session
+
+| Document | Changes |
+|---|---|
+| `nas-ops` skill | Containers table expanded, Docker binary path added, Watchtower pattern section added, volume paths corrected, Cloudflare tunnel table updated |
+| `nas-deploy` skill | Creation checklist updated (Watchtower label step), SSH reference corrected (docker binary path), 4 new lessons (14–17) |
+| `lifeboard/CLAUDE.md` | Deployment workflow updated with Watchtower pattern note |
+| `knowledge-base/CLAUDE.md` | Deployment checklist updated — confirmed ports, `kb_app` credentials, env vars |
+| `lifeboard/docker-compose.yml` | Watchtower refactored to label-based; Lifeboard services updated with watchtower label; version field removed |
+| `MASTER-TODO.md` | Task 18 completed; Knowledge Platform status updated to live |
+
+### What's next
+
+- P2: Define Lifeboard data model and integration points with Knowledge Platform
+- P2: Design mobile capture flow
+- P3: SS42 HQ hub
+- P3: Visual graph view for relationship mapping (v2)
+
+---
+
+## Session 7 — Lifecycle Pattern Design (2026-02-27)
+
+**Status:** COMPLETE. v1.1.0 design approved and implementation plan written. Ready to execute tomorrow.
+
+### What was done
+
+**Problem identified:** NocoDB assets (17 docs) are in the database but invisible in the UI — they were migrated into `assets`, not `pages`. No asset browser exists. Assets only appear when linked to a page.
+
+**Design session:** Full brainstorming using `superpowers:brainstorming` to design a reusable product lifecycle pattern for all SS42 projects.
+
+**Approach approved:** Approach C — layered hybrid:
+
+| Layer | Tool | What lives there |
+|---|---|---|
+| Code + bugs + releases | GitHub | Issues, PRs, releases, CHANGELOG, CI/CD |
+| Knowledge + decisions | KB | Specs, architecture, session logs, decisions, skill docs |
+| Environments | NAS | Production + staging container per project |
+| Process execution | Claude skills | How to run each lifecycle phase |
+| Tasks (future) | Lifeboard | Replaces GitHub Issues board when ready |
+
+**Nine design sections completed and approved:**
+
+1. Pattern overview — three pillars, release flow
+2. Branching — `main` (production) + `dev` (staging) + feature branches. Based on GitFlow simplified.
+3. Environments — staging container per project, `:dev` image tag, separate schema, staging subdomain
+4. Versioning — SemVer (semver.org) + Keep a Changelog format
+5. Backlog structure — GitHub Issues, 9-label taxonomy, 2 issue templates. Milestones = version numbers.
+6. KB documentation conventions — workspace structure, PM layer (Product/Specs/Architecture/Decisions/Session Logs/Skills/Documentation/Releases), boundary rules
+7. Document versioning — convention layer now, status field (v1.1), page snapshots (v1.2)
+8. Lifecycle skills — `lifecycle:new-feature`, `lifecycle:release`, `lifecycle:project-setup` (v1.1); `lifecycle:ideation`, `lifecycle:prioritize` agent (v1.2)
+9. KB v1.1 immediate fixes — asset browser, page status enforcement
+
+**Skill documentation clarified:** Claude skill files stay in `~/.claude/skills/`. Their human-readable documentation lives as KB pages under `IT & Projects → Skills`. Skills are the execution layer; KB is the documentation layer.
+
+### Documents created this session
+
+| Document | Path | Notes |
+|---|---|---|
+| Lifecycle pattern design | `docs/plans/2026-02-27-lifecycle-pattern-design.md` | Full design doc, all 9 sections, committed to `main` |
+| v1.1.0 implementation plan | `docs/plans/2026-02-27-v1.1.0-implementation.md` | 22 tasks, 9 phases, TDD, exact commands throughout |
+| KB lifecycle overview article | `docs/knowledge-base/kp-lifecycle-pattern.md` | New KB article for upload |
+| KB v1.1.0 scope article | `docs/knowledge-base/kp-v1.1.0-scope.md` | New KB article for upload |
+
+### Key decisions made
+
+| Decision | Rationale |
+|---|---|
+| Approach C (layered hybrid) | Right tool for each job. GitHub for tasks/code, KB for knowledge. Proven pattern at small team scale. |
+| SemVer + Keep a Changelog | Industry standards. No reason to deviate. |
+| 9-label GitHub taxonomy | Mirrors VS Code, React, and other major open source projects. |
+| Convention-first doc versioning | No new features needed today. Status field (v1.1) closes the gap. Page snapshots (v1.2) for full history. |
+| Lifecycle skills are global | Apply to all projects — live in `~/.claude/skills/lifecycle-*/` |
+| `lifecycle:ideation` and `:prioritize` deferred to v1.2 | Core pipeline must be solid before intelligence layer. |
+
+### v1.1.0 release scope
+
+| # | Feature |
+|---|---|
+| 1 | Asset browser (standalone panel, type filter, search) |
+| 2 | Page status enforcement (archived/draft filtering in API + nav) |
+| 3 | Staging pipeline (`dev` branch, `:dev` image, staging container, staging subdomain) |
+| 4 | GitHub Issue labels + templates on all repos |
+| 5 | PM templates in KB seed (product-brief, feature-spec, user-journey, workflow, release-notes, how-to, runbook) |
+| 6 | `lifecycle:new-feature`, `lifecycle:release`, `lifecycle:project-setup` skills |
+| 7 | Lifecycle pattern applied to Lifeboard + simonsays42 |
+
+### What's next
+
+**Tomorrow — execute v1.1.0 plan:**
+
+Open new session in `knowledge-base/` directory. Say:
+> "Load `superpowers:executing-plans`. The plan is at `docs/plans/2026-02-27-v1.1.0-implementation.md`. Start at Task 1."
+
+Split across two sessions:
+- Session A: Tasks 1–12 (branching, CI, staging environment, asset browser, page status, backlog)
+- Session B: Tasks 13–22 (KB templates, lifecycle skills, apply to other projects, release)
+

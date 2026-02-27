@@ -148,13 +148,25 @@ Markdown: `setMarkdownContent(element, md)` in `utils.js`:
 
 ## NAS Deployment Checklist
 
-1. `git push origin main` — triggers GitHub Actions build
-2. `DATABASE_URL=...nocodb superuser... npm run migrate`
-3. `DATABASE_URL=... npm run seed`
-4. Container Station: create from `ghcr.io/sspaynter/knowledge-base:latest`
-5. Set env vars (use `10.0.3.12:5432` for production DATABASE_URL)
-6. Cloudflare tunnel: `kb.ss-42.com` → container
-7. `curl https://kb.ss-42.com/api/health`
+1. `git push origin main` — triggers GitHub Actions build → image pushed to `ghcr.io/sspaynter/knowledge-base:latest`
+2. Migration already run (Session 4). Schema `knowledge_base` exists in `n8n-postgres`.
+3. Container Station: create from `ghcr.io/sspaynter/knowledge-base:latest`
+   - Network: NAT (10.0.3.x)
+   - Volume: `/share/CACHEDEV1_DATA/Container/knowledge-base/data` → `/app/uploads`
+   - Label: `com.centurylinklabs.watchtower.enable=true` (enables Watchtower auto-update)
+   - Set all env vars (see below)
+4. Cloudflare tunnel: `kb.ss-42.com` → `http://192.168.86.18:32779`
+5. `curl https://kb.ss-42.com/api/health` → `{"status":"ok","schema":"knowledge_base"}`
+
+**Production env vars for Container Station:**
+```
+DATABASE_URL=postgresql://kb_app:eb8aa0f9f18a0e279fc05f8b836cd328750d542acb3ba2f3@10.0.3.12:5432/nocodb
+SESSION_SECRET=<generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+UPLOAD_DIR=/app/uploads
+PORT=3000
+NODE_ENV=production
+HQ_URL=https://hq.ss-42.com
+```
 
 Details: `docs/plans/impl-05-deployment.md`
 

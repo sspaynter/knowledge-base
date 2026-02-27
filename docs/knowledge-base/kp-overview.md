@@ -55,18 +55,28 @@ Twelve interconnected problems drove this:
 
 ## Current state
 
-**Status:** All code complete. 33 tests passing. Ready for NAS deployment.
+**Version:** v1.0.0 — deployed and live at `kb.ss-42.com`
 
-**Completed:**
+**v1.0.0 completed:**
 - All 5 phases, 30 tasks — database, backend, frontend, deployment wiring
 - 12-table PostgreSQL schema in `knowledge_base` on `n8n-postgres`
 - Full REST API with auth, workspaces, pages, assets, search, upload, admin
 - Three-column Confluence-style frontend with editor, search, map view, settings
-- Dockerfile, docker-compose, GitHub Actions CI/CD workflow
+- Deployed to NAS — `kb.ss-42.com` via Cloudflare tunnel + Google OAuth
+- Admin account created, registration locked
 
-**Next step:** NAS deployment — push to GitHub, run migrate + seed, create Container Station container, wire `kb.ss-42.com` Cloudflare tunnel.
+**v1.1.0 in plan — ready to execute:**
+- Asset browser (NocoDB migrated docs currently invisible — no browse UI)
+- Page status enforcement (draft/archived filtering in nav)
+- Staging pipeline (`dev` branch, `:dev` image, `kb-staging.ss-42.com`)
+- GitHub Issue labels + templates on all SS42 repos
+- PM templates: product-brief, feature-spec, user-journey, workflow, release-notes, how-to, runbook
+- Three lifecycle Claude skills: `lifecycle:new-feature`, `lifecycle:release`, `lifecycle:project-setup`
 
-**Plan:** `docs/plans/2026-02-27-knowledge-platform-implementation-plan.md` — 6,407 lines, 30 tasks across 5 phases. Session log appended with deployment checklist.
+**Plans:**
+- `docs/plans/2026-02-27-knowledge-platform-implementation-plan.md` — v1.0 build (30 tasks)
+- `docs/plans/2026-02-27-lifecycle-pattern-design.md` — v1.1 design doc
+- `docs/plans/2026-02-27-v1.1.0-implementation.md` — v1.1 implementation plan (22 tasks, 9 phases)
 
 ## Related projects
 
