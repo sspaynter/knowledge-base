@@ -169,3 +169,60 @@ All tasks committed to git on `main`.
 | `docs/knowledge-base/kp-architecture.md` | Created (KB import) |
 | `docs/knowledge-base/kp-session-log-2026-02-27.md` | Created (KB import) |
 | `docs/knowledge-base/kp-design-decisions.md` | Created (KB import) |
+
+---
+
+## Session 5 — Phase 3 (components) + Phase 5 (deployment) complete (2026-02-27)
+
+**Status:** ALL PHASES DONE. App ready for NAS deploy and smoke test.
+
+### Phase 3: Frontend components (Tasks 20–24) — COMPLETE
+
+Commits: `51eab5c`
+
+| Task | File | What it does |
+|---|---|---|
+| 20 | `public/js/content.js` | `renderPage(page)` — breadcrumb, header, meta badges, markdown body via setMarkdownContent, asset panel + detail view |
+| 21 | `public/js/editor.js` | `openEditor(page)` — side-by-side editor with live preview, 30s auto-save, publish, dirty discard confirm |
+| 22 | `public/js/search.js` | `handleSearch(q)` — 280ms debounce, results by textContent, type filter from store, selectPage on click |
+| 23 | `public/js/map.js` | `renderMapView()` — relationship table, filterable by type and asset name, skeleton loader |
+| 24 | `public/js/settings.js` | `initSettings()` — 5 panels: workspaces, users/roles, API tokens, account, danger zone |
+
+**Security pattern throughout:** All DOM content built with `document.createElement` + `textContent`. No `innerHTML` assigned anywhere. Markdown rendering uses `setMarkdownContent` (DOMPurify + DOMParser) from utils.js.
+
+### Phase 5: Deployment (Tasks 25–29) — COMPLETE
+
+Commit: `e3e2639`
+
+| Task | File | Notes |
+|---|---|---|
+| 25 | `Dockerfile` | Node 20 Alpine, non-root user app:app, `npm ci --omit=dev`, copies scripts/, UPLOAD_DIR=/app/uploads |
+| 26 | `docker-compose.yml` | Local dev — build:., port 3001:3000, DATABASE_URL + SESSION_SECRET from .env, volume ./uploads:/app/uploads |
+| 27 | `.github/workflows/deploy.yml` | push to main → GHCR :latest + :sha-{hash} tags. Watchtower auto-pulls on :latest |
+| 28 | `.env.example` | DATABASE_URL format, SESSION_SECRET, UPLOAD_DIR, HQ_URL documented |
+| — | `.gitignore` | Added uploads/ and coverage/ |
+| 29 | `package.json` | Added `npm run migrate` and `npm run seed` scripts |
+
+**Key deviation fixed:** Plan's docker-compose.yml used individual `DB_HOST`, `DB_PORT` etc. vars. Actual backend (`services/database.js`) uses `DATABASE_URL` connection string. Compose file updated to match.
+
+### What remains before app is live
+
+All code is written, tested, and committed. The outstanding work is operational:
+
+1. Push to GitHub: `git push origin main` → GitHub Actions builds image → pushes to `ghcr.io/sspaynter/knowledge-base:latest`
+2. Run migration on NAS: `DATABASE_URL=postgresql://nocodb:nocodb2026@192.168.86.18:32775/nocodb npm run migrate`
+3. Run seed on NAS: `DATABASE_URL=... npm run seed`
+4. Create container in Container Station: image `ghcr.io/sspaynter/knowledge-base:latest`, map port 3000, set all env vars (DB_HOST=10.0.3.12 for internal Docker network)
+5. Add `kb.ss-42.com` → container in Cloudflare tunnel config
+6. Smoke test: `curl https://kb.ss-42.com/api/health` → `{"status":"ok","schema":"knowledge_base"}`
+
+**env vars for Container Station:**
+```
+DATABASE_URL=postgresql://kb_app:<password>@10.0.3.12:5432/nocodb
+SESSION_SECRET=<32-byte-hex>
+UPLOAD_DIR=/app/uploads
+PORT=3000
+NODE_ENV=production
+HQ_URL=https://hq.ss-42.com
+```
+
