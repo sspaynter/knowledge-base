@@ -4,7 +4,7 @@
 const auth = require('../services/auth');
 
 // ── requireAuth ────────────────────────────────────────────
-// Accepts session cookie OR Bearer token.
+// Accepts Bearer API token OR Passport session (Google OAuth).
 // Sets req.user on success. Returns 401 on failure.
 
 async function requireAuth(req, res, next) {
@@ -21,14 +21,9 @@ async function requireAuth(req, res, next) {
       return res.status(401).json({ error: 'Invalid API token' });
     }
 
-    // 2. Try session cookie
-    const sessionToken = req.cookies?.session;
-    if (sessionToken) {
-      const user = await auth.validateSession(sessionToken);
-      if (user) {
-        req.user = user;
-        return next();
-      }
+    // 2. Try Passport session (Google OAuth via shared_auth)
+    if (req.user) {
+      return next();
     }
 
     return res.status(401).json({ error: 'Authentication required' });

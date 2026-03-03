@@ -28,26 +28,14 @@ async function request(method, path, body = null) {
 // Expose request for ad-hoc calls (e.g. settings)
 export { request };
 
-// Auth
-// Note: backend uses GET /api/auth/check which returns { authenticated, user }
-// getMe unwraps this to return just the user (or throw if not authenticated)
+// Auth — Google OAuth via /auth routes
 export async function getMe() {
-  const data = await request('GET', '/api/auth/check');
+  const data = await request('GET', '/auth/me');
   if (!data.authenticated) throw new Error('Unauthorized');
   return data.user;
 }
 
-export async function login(body) {
-  const data = await request('POST', '/api/auth/login', body);
-  return data.user; // backend wraps in { user: {...} }
-}
-
-export async function register(body) {
-  const data = await request('POST', '/api/auth/register', body);
-  return data.user; // backend wraps in { user: {...} }
-}
-
-export const logout = () => request('POST', '/api/auth/logout');
+export const logout = () => request('POST', '/auth/logout');
 
 // Workspaces
 export const listWorkspaces  = ()         => request('GET',    '/api/workspaces');
