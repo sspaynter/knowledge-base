@@ -1,8 +1,10 @@
+// tests/routes/health.test.js
+// No auth needed for health check.
+
+'use strict';
+
 const request = require('supertest');
 const app = require('../../server');
-const db = require('../../services/database');
-
-afterAll(() => db.getPool().end());
 
 test('GET /api/health returns ok', async () => {
   const res = await request(app).get('/api/health');

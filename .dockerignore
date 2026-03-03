@@ -1,0 +1,22 @@
+# Development and test artifacts — not needed in the container image
+node_modules
+tests
+.git
+.gitignore
+.env
+.env.*
+
+# Vault is mounted as a volume at runtime
+vault
+
+# Documentation and planning files
+docs
+*.md
+*.html
+
+# Docker config files themselves
+docker-compose.yml
+Dockerfile
+
+# CI config
+.github

@@ -1,5 +1,7 @@
 # Skill Spec: `product-design`
 
+> **Status (2026-02-28):** Built and validated. Skill file is at `~/.claude/skills/product-design/SKILL.md`. Gate numbering updated: prototype review is Gate 3, implementation plan is Gate 4. This document is retained as reference only.
+
 **Type:** Reference / Skill specification
 **Workspace:** IT & Projects
 **Section:** Claude
@@ -54,6 +56,29 @@ Do not write an implementation plan until the design is confirmed.
 - When design is complete: review with Simon
 - Gate passes when Simon confirms: "Yes, that is the design"
 - Output: `docs/plans/[date]-[product-name]-design.md`
+
+### Gate 2.5 — Prototype + review (optional but recommended)
+Do not skip this gate for any feature with non-trivial navigation or multi-screen flows.
+
+- Generate a single-file annotated HTML prototype from the confirmed design spec
+- Open in browser automatically
+- Simon clicks through all user flows, adds sticky-note annotations on any element
+- Copies structured feedback from the "Copy feedback" button
+- Paste feedback into Claude
+- Claude updates the design spec if changes are needed, or proceeds to Gate 3 if the design holds
+- Gate passes when Simon confirms: "Flows look right, ready to plan"
+- Output: feedback incorporated into design spec; prototype file saved as `preview-[feature].html` if useful to keep
+
+**Why this gate exists:**
+Building from a text description of UI means problems are discovered mid-build. A 20-minute prototype review catches navigation errors, missing states, and layout problems before any implementation code is written.
+
+**Minimum viable prototype includes:**
+- Multi-screen navigation matching the spec
+- Click-to-annotate on any element
+- Notes panel with numbered entries
+- Copy feedback button (structured text output)
+
+**Reference:** `docs/knowledge-base/product-design-prototype-flow.md`
 
 ### Gate 3 — Implementation plan
 Load `superpowers:writing-plans` skill.

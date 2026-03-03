@@ -32,9 +32,8 @@ const pool = new Pool({
 });
 
 // Known workspace folder → DB slug aliases
-const WORKSPACE_ALIASES = {
-  'it-and-projects': 'it-projects',
-};
+// Add entries here when a vault folder name differs from its desired DB slug
+const WORKSPACE_ALIASES = {};
 
 async function main() {
   const client = await pool.connect();

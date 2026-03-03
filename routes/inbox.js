@@ -69,7 +69,7 @@ router.post('/', async (req, res, next) => {
       content,
       template_type: 'blank',
       status:        'draft',
-      created_by:    req.user?.username || 'api',
+      created_by:    req.user?.isApiToken ? 'claude' : 'user',
     });
 
     res.status(201).json(page);

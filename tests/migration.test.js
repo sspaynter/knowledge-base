@@ -5,7 +5,7 @@ const pool = new Pool({
     'postgresql://nocodb:nocodb2026@192.168.86.18:32775/nocodb'
 });
 
-afterAll(() => pool.end());
+// Pool closed by forceExit in jest.config.js
 
 const TABLES = [
   'workspaces', 'sections', 'pages', 'assets',

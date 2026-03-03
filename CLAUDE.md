@@ -172,6 +172,17 @@ Details: `docs/plans/impl-05-deployment.md`
 
 ---
 
+## Knowledge Base Vault
+
+KB project documentation lives at `knowledge-base/vault/products/knowledge-base/`.
+
+**Workspace:** `products/knowledge-base/`
+
+At session end, write or update vault articles under `products/knowledge-base/`:
+- `products/knowledge-base/kp-overview.md` — architecture, status, key decisions
+- `products/knowledge-base/kp-architecture.md` — vault sync, three-layer read, DB schema
+- `products/knowledge-base/kp-feature-status.md` — phase progress, what is live
+
 ## Background Skills (applied silently)
 
 - `code-quality` — coding standards

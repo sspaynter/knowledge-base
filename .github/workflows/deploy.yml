@@ -1,11 +1,14 @@
-name: Build and deploy
+name: Test, build and deploy
 
 # Triggers on push to main or dev.
 # main → :latest tag (production). dev → :dev tag (staging).
 # Watchtower on the NAS detects tag updates and auto-pulls.
+# Tests must pass before the image is built.
 
 on:
   push:
+    branches: [main, dev]
+  pull_request:
     branches: [main, dev]
 
 env:
@@ -13,8 +16,59 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  # ── Test gate ──────────────────────────────────────────────────────────────
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nocodb
+          POSTGRES_PASSWORD: nocodb2026
+          POSTGRES_DB: nocodb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://nocodb:nocodb2026@localhost:5432/nocodb
+      SESSION_SECRET: ci-test-secret-not-for-production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run schema migration
+        run: npm run migrate
+
+      - name: Seed database
+        run: npm run seed
+
+      - name: Run tests
+        run: npm test
+
+  # ── Build and push Docker image ───────────────────────────────────────────
+  build-and-push:
+    name: Build and push image
+    needs: test
+    runs-on: ubuntu-latest
+    # Only build on direct pushes — not PRs
+    if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write

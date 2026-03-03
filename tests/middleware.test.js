@@ -4,7 +4,7 @@ const cookieParser = require('cookie-parser');
 const { requireAuth, requireRole } = require('../middleware/requireAuth');
 const db = require('../services/database');
 
-afterAll(() => db.getPool().end());
+// Pool closed by forceExit in jest.config.js
 
 const app = express();
 app.use(cookieParser());

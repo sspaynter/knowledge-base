@@ -142,9 +142,57 @@ Templates define the default structure when Claude auto-generates a page or Simo
 | OneNote | Links only. No API sync. |
 | Images | Upload and store locally. Render inline. |
 
+### Vault storage structure
+
+Content lives as Markdown files in a vault directory on the NAS. The database stores metadata, relationships, and a content cache for full-text search. Files are the source of truth.
+
+**Vault path (NAS):** `/volume1/knowledge-base/vault/`
+**Vault path (container):** `/app/vault/` (mounted as Docker volume)
+
+Folder structure mirrors the information architecture:
+
+```
+vault/
+  [workspace-slug]/
+    [section-slug]/
+      [page-slug].md
+      [child-page-slug]/
+        [grandchild-slug].md
+```
+
+Example:
+
+```
+vault/
+  it-and-projects/
+    claude/
+      overview.md
+      skills/
+        simon-context.md
+        app-scaffold.md
+        infra-context.md
+        nas-ops.md
+      agents/
+        researcher.md
+        builder.md
+      setup-and-config.md
+      session-log.md
+    projects/
+      knowledge-base.md
+      lifeboard.md
+  personal/
+    ...
+```
+
+The vault directory is readable by any Markdown editor (Obsidian, VS Code, etc.) and can be git-versioned independently. Claude sessions write `.md` files directly to the vault. The app syncs metadata to the database on write.
+
+Skills stored in `~/.claude/skills/` can be read into the Knowledge Base by path reference — the `file_path` column on an asset record points to the actual file on disk.
+
 ### HQ link
 
-The SS42 logo mark in the top bar links to the internal HQ hub (a subdomain of ss-42.com, locally hosted). URL stored as an environment variable `HQ_URL`. This is the navigation anchor for the SS42 app suite.
+The **SS42HQ logo mark** in the top bar and workspace rail links to the internal HQ hub (a subdomain of ss-42.com, locally hosted). URL stored as an environment variable `HQ_URL`. This is the navigation anchor for the SS42 app suite.
+
+The logo is the full SS42HQ mark as an SVG — not a text placeholder. The SVG file is bundled with the app. It appears at 28×28px in the rail and workspace brand position.
 
 ---
 
@@ -197,14 +245,17 @@ GRANT SELECT ON pys9d495uci8hea.jobs TO kb_app;
 | parent_id | FK → pages (nullable) | Null = root page for section |
 | title | text | |
 | slug | text | URL segment |
-| content | text | Markdown body |
+| file_path | text | Path to `.md` file relative to vault root — e.g. `it-and-projects/claude/skills/simon-context.md` |
+| content_cache | text | Copy of file content — updated on every write. Used for full-text search and fast rendering. Not the source of truth. |
 | template_type | text | skill, project-overview, decision, session-log, blank, etc. |
 | status | text | published / draft |
 | created_by | text | claude / simon / both |
 | sort_order | integer | Position among siblings |
 | deleted_at | timestamptz | Soft delete — null = not deleted |
 | created_at / updated_at | timestamptz | |
-| search_vector | tsvector | Generated — full-text search |
+| search_vector | tsvector | Generated from content_cache — full-text search |
+
+**Source of truth:** The `.md` file at `file_path`. The app reads and writes this file. `content_cache` is updated on every save and used for search and initial render — it is never the canonical content.
 
 #### `assets`
 | Column | Type | Notes |
@@ -213,14 +264,20 @@ GRANT SELECT ON pys9d495uci8hea.jobs TO kb_app;
 | type | text | skill / config / decision / session / image / file / link / miro |
 | title | text | |
 | description | text | Short summary |
-| content | text | Full text content (skills, decisions, session logs) |
-| file_path | text | Disk path for uploaded files/images |
+| content | text | Full text content — for text-based assets this is a cache synced from the file. Source of truth is the file at `file_path`. |
+| file_path | text | Absolute path on disk to the source file. For skills: `~/.claude/skills/[name]/SKILL.md`. For vault assets: `/app/vault/...`. For images/uploads: `/app/uploads/...`. |
 | url | text | External URL for links and Miro embeds |
 | metadata | jsonb | Type-specific fields — version, tags, project, status, file_size, etc. |
 | created_by | text | claude / simon |
 | deleted_at | timestamptz | Soft delete |
 | created_at / updated_at | timestamptz | |
-| search_vector | tsvector | Generated — full-text search |
+| search_vector | tsvector | Generated from content — full-text search |
+
+**File-based assets** (skill, config, decision, session): `file_path` points to the actual file on disk. `content` is a synced cache. The app can read the file directly and update `content` on sync.
+
+**Binary assets** (image, file): `file_path` is the storage path on disk. `content` is empty or contains extracted text (e.g. PDF text for search).
+
+**Reference assets** (link, miro): `file_path` is null. `url` holds the external reference.
 
 #### `asset_versions`
 | Column | Type | Notes |
@@ -422,7 +479,7 @@ Three-column layout, persistent:
 - Badges: status (active/draft/archived), type, scope — pill with hairline border
 - Markdown body: max-width 700px, Lora serif, 15.5px, line-height 1.82
 - Asset panel: collapsible at bottom of page — shows linked assets with type icon, name, metadata
-- Asset panel rows: clickable, expands asset detail inline or opens in overlay
+- Asset panel rows: clicking a row expands an **inline detail drawer** below that row. The drawer shows: full content (Markdown rendered), version history (list of `asset_versions` entries), linked pages, and metadata. A second click on the same row collapses the drawer. A "Open full view" button in the drawer opens the asset in a full-screen overlay for deep inspection. Only one drawer can be open at a time.
 
 ### Map view (relationship visualisation)
 
@@ -441,12 +498,13 @@ researcher (agent)  →  loads  →  nas-ops (skill)
 researcher (agent)  →  loads  →  [project CLAUDE.md] (config)
 ```
 
-**v2 — visual graph (out of scope for v1):**
+**v1 stretch — basic graph view:**
 
-An interactive node-link diagram. Click a node to highlight its connections. Filter by relationship type. This is the long-term vision — showing the full dependency web of Simon's environment visually.
+A toggle on the Map view switches between the table and a simple force-directed graph. Nodes = assets (coloured by type). Edges = relationships (labelled by type). Click a node to highlight its direct connections and dim everything else. No physics simulation needed — a static layout using D3-force or Cytoscape.js with minimal configuration is sufficient. This is the Obsidian-style visualisation Simon wants. If build complexity is high, defer to v2 — the table gives equivalent information value and the `asset_relationships` data structure is already wired.
 
-**Why the table-first approach for v1:**
-Building an interactive graph (D3, Cytoscape) is a significant effort and hard to maintain. A well-designed table with filters gives the same information value immediately. The `asset_relationships` table is already wired up — adding the graph view later is additive, not a rebuild.
+**v2 — full interactive graph:**
+
+Configurable layout, filter by workspace/project, drill-down panels, relationship editing directly from the graph. Same data, richer interface.
 
 ### Editor mode
 
@@ -554,32 +612,53 @@ Light and dark mode via CSS custom properties on `[data-theme]` attribute. Toggl
 
 ### HQ logo mark
 
-The "42" minimal SVG mark in the top-left and workspace rail. Links to the internal HQ hub URL (`HQ_URL` environment variable — a locally-hosted subdomain). Serves as the navigation anchor for the SS42 tool suite.
+The **SS42HQ logo mark** — the official SVG brand mark for the SS42 suite. Appears in the top-left of the top bar and at the top of the workspace rail at 28×28px. Links to the internal HQ hub URL (`HQ_URL` environment variable — a locally-hosted subdomain). Serves as the navigation anchor for the SS42 tool suite. The SVG file is bundled with the app — not a text placeholder or a "42" glyph.
 
 ---
 
 ## 7. Write Paths
 
+### Vault as source of truth
+
+All Markdown content lives in the vault. The app reads and writes `.md` files. The database stores metadata and a content cache for search. Every write to a file triggers a DB sync.
+
+### Simon (browser) → Knowledge Base
+
+1. User opens a page — app reads the `.md` file from vault
+2. Editor presents the raw Markdown with a live preview
+3. On Save: app writes the updated content to the `.md` file, then updates `pages.content_cache` and `pages.search_vector` in the DB
+4. Asset uploads (images, files) write to `/app/uploads/` and create an `assets` record with `file_path`
+
 ### Claude sessions → Knowledge Base
 
-Claude writes documentation via the KB REST API using a bearer token:
+Claude writes files directly to the vault, then calls the API to sync metadata:
 
 ```
+# Write the file
+Write content to /app/vault/[workspace]/[section]/[page].md
+
+# Sync via API
 POST /api/assets          — create or update a skill/decision/session record
-PATCH /api/assets/:id     — update (triggers automatic version snapshot)
-POST /api/pages           — create a new auto-generated page
-POST /api/assets/:id/link — link an asset to a page
+PATCH /api/assets/:id     — update (triggers version snapshot + content_cache sync)
+POST /api/pages           — register a new page (file already exists)
+POST /api/assets/:id/link — link asset to a page
 ```
 
-This replaces the previous NocoDB API write path. Claude never connects directly to PostgreSQL.
+For skill updates: Claude updates the `.md` file in `~/.claude/skills/[name]/SKILL.md`, then calls `PATCH /api/assets/:id` with the new content and change_summary. The API stores a version snapshot and updates the content cache.
+
+Claude never connects directly to PostgreSQL.
 
 ### Auto-generation flow
 
 When Claude completes a session or updates a skill:
-1. POST to `/api/assets` with type, content, change_summary, changed_by
-2. The API stores the asset and creates an `asset_versions` snapshot automatically
-3. If a page exists for this asset, the page's template section re-renders from the latest asset data on next load
-4. If no page exists, Claude can POST to `/api/pages` to create one from a template
+1. Write or update the `.md` file at the correct vault path
+2. PATCH `/api/assets/:id` with type, content, change_summary, changed_by
+3. The API creates an `asset_versions` snapshot and syncs `content_cache`
+4. If no page exists yet, POST to `/api/pages` to register it — the file already exists
+
+### File watcher (background sync)
+
+A `chokidar` file watcher monitors the vault directory. If a file is modified outside the app (e.g. edited in Obsidian or VS Code), the watcher triggers a DB sync of `content_cache` and `search_vector`. This keeps the app consistent with any external edits.
 
 ---
 
@@ -622,11 +701,15 @@ Admin panel is a settings overlay/modal, not a separate route. The first registe
 | Frontend | Vanilla JS ES6 modules | Unchanged |
 | Icons | Lucide (CDN or self-hosted) | Replaces emoji |
 | Markdown | marked + DOMPurify | Unchanged |
-| Editor | EasyMDE or CodeMirror | For markdown editing |
+| Editor | EasyMDE or CodeMirror | Reads/writes .md files via API |
 | Fonts | DM Sans, Lora, JetBrains Mono | Via Google Fonts CDN |
 | Theming | CSS custom properties | Light/dark via data-theme attribute |
+| File watcher | chokidar | Monitors vault for external edits; triggers DB sync |
+| Graph (v1 stretch) | Cytoscape.js or D3-force | Map view graph toggle — load on demand |
 | CI/CD | GitHub Actions → GHCR | Unchanged |
 | Hosting | QNAP NAS, Cloudflare tunnel | kb.ss-42.com |
+| Vault volume | Docker volume | NAS path: `/volume1/knowledge-base/vault/` → container: `/app/vault/` |
+| Uploads volume | Docker volume | NAS path: `/volume1/knowledge-base/uploads/` → container: `/app/uploads/` |
 
 ---
 
@@ -634,7 +717,7 @@ Admin panel is a settings overlay/modal, not a separate route. The first registe
 
 - OneNote API sync
 - Drag-to-reorder in sidebar (v2 — v1 uses menu-based move)
-- Graph/visual view of relationships (v2 — v1 uses filterable table)
+- Full interactive graph view (v2 — v1 stretch has basic force-directed toggle on Map view)
 - Comments on pages
 - Page history UI / restore deleted pages (soft delete exists in data model; restore UI is v2)
 - Mobile-optimised layout (desktop is the focus; mobile capture via API integrations)
@@ -681,10 +764,56 @@ When implementing this spec, the following skills and environment context are ac
 - **Database host (NAS internal):** `10.0.3.12:5432` — `n8n-postgres` container
 - **Database host (local dev):** `192.168.86.18:32775`
 - **Database name:** `nocodb`
-- **New schema:** `knowledge_base` (to be created — isolated from NocoDB schemas)
-- **App URL:** `kb.ss-42.com` via Cloudflare tunnel
+- **Production schema:** `knowledge_base` (to be created — isolated from NocoDB schemas)
+- **Staging schema:** `knowledge_base_staging` (separate schema, same PostgreSQL container)
+- **Production URL:** `kb.ss-42.com` via Cloudflare tunnel
+- **Staging URL:** `kb-staging.ss-42.com` via Cloudflare tunnel
 - **Container registry:** `ghcr.io/sspaynter/knowledge-base`
-- **Deployment:** QNAP Container Station, pulled automatically by Watchtower on `latest` tag push
+- **Production image tag:** `:latest` — Watchtower watches `main` branch builds
+- **Staging image tag:** `:dev` — Watchtower watches `dev` branch builds
+- **Deployment:** QNAP Container Station — two containers (prod + staging) running side by side
 - **NocoDB still active:** Job Tracker uses NocoDB — do not modify or drop NocoDB schemas
 
 Any implementation agent should load `nas-ops` and `infra-context` before writing deployment-related code or configuration.
+
+---
+
+## 14. Deployment
+
+Follows the SS42 standard deployment model defined in `infra-context`. Project-specific values are listed below.
+
+### Branch model
+
+| Branch | Purpose | Docker tag | Watchtower |
+|---|---|---|---|
+| `main` | Production | `:latest` | Watches `:latest` |
+| `dev` | Staging | `:dev` | Watches `:dev` |
+
+Feature branches are cut from `dev`, named `feature/`, `fix/`, `chore/`, or `docs/`. All work merges to `dev` first. Release: merge `dev` → `main`, tag `vX.Y.Z`, publish GitHub Release.
+
+### Environments
+
+| | Production | Staging |
+|---|---|---|
+| Branch | `main` | `dev` |
+| Docker tag | `:latest` | `:dev` |
+| Subdomain | `kb.ss-42.com` | `kb-staging.ss-42.com` |
+| DB schema | `knowledge_base` | `knowledge_base_staging` |
+| Vault volume (NAS) | `/volume1/knowledge-base/vault/` | `/volume1/knowledge-base-staging/vault/` |
+| Uploads volume (NAS) | `/volume1/knowledge-base/uploads/` | `/volume1/knowledge-base-staging/uploads/` |
+| Container port | `3000` | `3001` |
+
+### CI/CD pipeline
+
+GitHub Actions builds the Docker image on each push:
+
+- Push to `main` → builds `:latest` → pushed to `ghcr.io/sspaynter/knowledge-base:latest`
+- Push to `dev` → builds `:dev` → pushed to `ghcr.io/sspaynter/knowledge-base:dev`
+
+Watchtower polls GHCR and auto-pulls when a new image is detected. No manual deployment step required.
+
+### NAS deployment
+
+Both containers run in QNAP Container Station on the NAS. Cloudflare Tunnel routes public subdomains to the correct container by local container name. No ports are exposed to the internet — only to the internal Docker network and the Cloudflare Tunnel.
+
+The staging container runs alongside production. They are fully independent — separate DB schemas, separate vault volumes, separate image tags.

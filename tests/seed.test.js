@@ -5,30 +5,32 @@ const pool = new Pool({
     'postgresql://nocodb:nocodb2026@192.168.86.18:32775/nocodb'
 });
 
-afterAll(() => pool.end());
+// Pool closed by forceExit in jest.config.js
 
 test('seed: initial workspaces exist', async () => {
   const result = await pool.query(
     "SELECT slug FROM knowledge_base.workspaces ORDER BY sort_order"
   );
   const slugs = result.rows.map(r => r.slug);
-  expect(slugs).toContain('it-projects');
+  expect(slugs).toContain('inbox');
+  expect(slugs).toContain('operations');
+  expect(slugs).toContain('products');
   expect(slugs).toContain('personal');
-  expect(slugs).toContain('work');
   expect(slugs).toContain('learning');
+  expect(slugs).toContain('archive');
 });
 
-test('seed: IT & Projects workspace has sections', async () => {
+test('seed: operations workspace has sections', async () => {
   const result = await pool.query(`
     SELECT s.slug FROM knowledge_base.sections s
     JOIN knowledge_base.workspaces w ON w.id = s.workspace_id
-    WHERE w.slug = 'it-projects'
+    WHERE w.slug = 'operations'
     ORDER BY s.sort_order
   `);
   const slugs = result.rows.map(r => r.slug);
-  expect(slugs).toContain('claude');
-  expect(slugs).toContain('projects');
+  expect(slugs).toContain('ai-operating-model');
   expect(slugs).toContain('infrastructure');
+  expect(slugs).toContain('engineering-practice');
 });
 
 test('seed: all templates exist', async () => {

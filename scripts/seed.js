@@ -1,6 +1,10 @@
 // scripts/seed.js
 // Seeds initial workspaces, sections, templates, and settings.
 // Safe to run multiple times — uses INSERT ... ON CONFLICT DO NOTHING.
+//
+// Workspace taxonomy follows modified PARA:
+//   inbox / operations / products / projects / studio / work / personal / learning / archive
+// vault-sync auto-creates additional sections as it encounters vault directories.
 
 const { Pool } = require('pg');
 
@@ -16,10 +20,15 @@ async function seed() {
 
     // ── Workspaces ─────────────────────────────────────────
     const workspaces = [
-      { name: 'IT & Projects', slug: 'it-projects', icon: 'monitor',    sort_order: 0 },
-      { name: 'Personal',      slug: 'personal',    icon: 'user',        sort_order: 1 },
-      { name: 'Work',          slug: 'work',         icon: 'briefcase',   sort_order: 2 },
-      { name: 'Learning',      slug: 'learning',     icon: 'book-open',   sort_order: 3 },
+      { name: 'Inbox',      slug: 'inbox',      icon: 'inbox',       sort_order: 0 },
+      { name: 'Operations', slug: 'operations', icon: 'monitor',     sort_order: 1 },
+      { name: 'Products',   slug: 'products',   icon: 'layout-grid', sort_order: 2 },
+      { name: 'Projects',   slug: 'projects',   icon: 'folder',      sort_order: 3 },
+      { name: 'Studio',     slug: 'studio',     icon: 'sparkles',    sort_order: 4 },
+      { name: 'Work',       slug: 'work',       icon: 'briefcase',   sort_order: 5 },
+      { name: 'Personal',   slug: 'personal',   icon: 'user',        sort_order: 6 },
+      { name: 'Learning',   slug: 'learning',   icon: 'book-open',   sort_order: 7 },
+      { name: 'Archive',    slug: 'archive',    icon: 'archive',     sort_order: 8 },
     ];
 
     for (const ws of workspaces) {
@@ -32,18 +41,27 @@ async function seed() {
     console.log('✓ Workspaces seeded');
 
     // ── Sections ───────────────────────────────────────────
+    // Key sections seeded here; vault-sync auto-creates additional sections from file paths.
     const sections = [
-      // IT & Projects
-      { workspace: 'it-projects', name: 'Claude',         slug: 'claude',         icon: 'bot',         sort_order: 0 },
-      { workspace: 'it-projects', name: 'Projects',       slug: 'projects',       icon: 'layout-grid', sort_order: 1 },
-      { workspace: 'it-projects', name: 'Infrastructure', slug: 'infrastructure', icon: 'server',       sort_order: 2 },
+      // Operations
+      { workspace: 'operations', name: 'AI Operating Model',   slug: 'ai-operating-model',  icon: 'bot',       sort_order: 0 },
+      { workspace: 'operations', name: 'Infrastructure',       slug: 'infrastructure',       icon: 'server',    sort_order: 1 },
+      { workspace: 'operations', name: 'Engineering Practice', slug: 'engineering-practice', icon: 'code',      sort_order: 2 },
+      { workspace: 'operations', name: 'Automation',           slug: 'automation',           icon: 'zap',       sort_order: 3 },
+      // Products
+      { workspace: 'products',   name: 'Knowledge Base',       slug: 'knowledge-base',       icon: 'database',  sort_order: 0 },
+      { workspace: 'products',   name: 'Applyr',               slug: 'applyr',               icon: 'briefcase', sort_order: 1 },
+      { workspace: 'products',   name: 'ToDo',                 slug: 'todo',                 icon: 'check',     sort_order: 2 },
+      { workspace: 'products',   name: 'n8n',                  slug: 'n8n',                  icon: 'workflow',  sort_order: 3 },
+      // Projects
+      { workspace: 'projects',   name: 'Clients',              slug: 'clients',              icon: 'users',     sort_order: 0 },
       // Personal
-      { workspace: 'personal',    name: 'General',        slug: 'general',        icon: 'notebook',     sort_order: 0 },
-      { workspace: 'personal',    name: 'Bag Business',   slug: 'bag-business',   icon: 'package',      sort_order: 1 },
-      // Work
-      { workspace: 'work',        name: 'General',        slug: 'general',        icon: 'notebook',     sort_order: 0 },
+      { workspace: 'personal',   name: 'Job Search',           slug: 'job-search',           icon: 'search',    sort_order: 0 },
+      { workspace: 'personal',   name: 'General',              slug: 'general',              icon: 'notebook',  sort_order: 1 },
       // Learning
-      { workspace: 'learning',    name: 'General',        slug: 'general',        icon: 'notebook',     sort_order: 0 },
+      { workspace: 'learning',   name: 'AI',                   slug: 'ai',                   icon: 'bot',       sort_order: 0 },
+      { workspace: 'learning',   name: 'Product',              slug: 'product',              icon: 'package',   sort_order: 1 },
+      { workspace: 'learning',   name: 'IT',                   slug: 'it',                   icon: 'server',    sort_order: 2 },
     ];
 
     for (const sec of sections) {

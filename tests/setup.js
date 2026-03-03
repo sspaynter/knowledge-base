@@ -5,3 +5,4 @@ process.env.DATABASE_URL = process.env.DATABASE_URL ||
   'postgresql://nocodb:nocodb2026@192.168.86.18:32775/nocodb';
 
 process.env.UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/kb-test-uploads';
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret-not-for-production';

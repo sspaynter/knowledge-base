@@ -1,7 +1,7 @@
 const auth = require('../services/auth');
 const db = require('../services/database');
 
-afterAll(() => db.getPool().end());
+// Pool closed by forceExit in jest.config.js
 
 // Clean up test users between runs
 beforeEach(async () => {

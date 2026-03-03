@@ -1,6 +1,6 @@
 const db = require('../services/database');
 
-afterAll(() => db.getPool().end());
+// Pool closed by forceExit in jest.config.js
 
 test('getPool returns a connected pool', async () => {
   const pool = db.getPool();
