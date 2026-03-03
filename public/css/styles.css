@@ -209,6 +209,15 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
 }
 .rail__item:hover .rail__tooltip { opacity: 1; }
 
+/* Divider between core and built app sections */
+.rail__divider {
+  width: 24px;
+  height: 1px;
+  background: var(--border);
+  margin: 6px auto;
+  flex-shrink: 0;
+}
+
 .rail__footer { padding: 8px 0; }
 .rail__add-btn {
   width: 32px;

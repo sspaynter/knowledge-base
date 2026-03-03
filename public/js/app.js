@@ -8,12 +8,15 @@ import { toastError }  from './toast.js';
 import { initials }    from './utils.js';
 
 // ── Static app rail config ─────────────────────
-// KB is active. Other app URLs are production SS42 suite URLs.
-const APP_ICONS = [
-  { id: 'kb',        label: 'Knowledge Base', icon: 'book-open',  url: null,                     active: true  },
-  { id: 'applyr',    label: 'Applyr',         icon: 'briefcase',  url: 'https://jobs.ss-42.com', active: false },
-  { id: 'lifeboard', label: 'Lifeboard',      icon: 'check-square', url: 'https://todo.ss-42.com', active: false },
-  { id: 'projects',  label: 'Projects',       icon: 'layers',     url: '#',                      active: false },
+// Core SS42 hub apps — top section of the rail.
+const CORE_APPS = [
+  { id: 'kb',   label: 'Knowledge Base', icon: 'book-open',    url: null,                      active: true  },
+  { id: 'todo', label: 'To Do',          icon: 'check-square', url: 'https://todo.ss-42.com',  active: false },
+];
+
+// Built apps — apps created for specific capabilities, shown below the divider.
+const BUILT_APPS = [
+  { id: 'applyr', label: 'Applyr', icon: 'briefcase', url: 'https://jobs.ss-42.com', active: false },
 ];
 
 // ── Boot ──────────────────────────────────────
@@ -65,35 +68,48 @@ function renderAppRail() {
   if (!rail) return;
   rail.textContent = '';
 
-  APP_ICONS.forEach(app => {
-    const li = document.createElement('li');
-    li.className = 'rail__item' + (app.active ? ' rail__item--active' : '');
-    li.setAttribute('role', 'listitem');
-    li.title = app.label;
+  // Core SS42 hub apps (top)
+  CORE_APPS.forEach(app => rail.appendChild(makeRailItem(app)));
 
-    const icon = document.createElement('i');
-    icon.setAttribute('data-lucide', app.icon);
-    icon.setAttribute('aria-hidden', 'true');
+  // Divider between core and built apps
+  const divider = document.createElement('li');
+  divider.className = 'rail__divider';
+  divider.setAttribute('role', 'separator');
+  divider.setAttribute('aria-hidden', 'true');
+  rail.appendChild(divider);
 
-    const tooltip = document.createElement('span');
-    tooltip.className = 'rail__tooltip';
-    tooltip.textContent = app.label;
-
-    li.appendChild(icon);
-    li.appendChild(tooltip);
-
-    if (app.url && app.url !== '#') {
-      li.style.cursor = 'pointer';
-      li.addEventListener('click', () => { window.location.href = app.url; });
-    } else if (!app.active) {
-      li.style.cursor = 'default';
-      li.style.opacity = '0.5';
-    }
-
-    rail.appendChild(li);
-  });
+  // Built/add-on apps (bottom)
+  BUILT_APPS.forEach(app => rail.appendChild(makeRailItem(app)));
 
   window.lucide.createIcons();
+}
+
+function makeRailItem(app) {
+  const li = document.createElement('li');
+  li.className = 'rail__item' + (app.active ? ' rail__item--active' : '');
+  li.setAttribute('role', 'listitem');
+  li.title = app.label;
+
+  const icon = document.createElement('i');
+  icon.setAttribute('data-lucide', app.icon);
+  icon.setAttribute('aria-hidden', 'true');
+
+  const tooltip = document.createElement('span');
+  tooltip.className = 'rail__tooltip';
+  tooltip.textContent = app.label;
+
+  li.appendChild(icon);
+  li.appendChild(tooltip);
+
+  if (app.url && app.url !== '#') {
+    li.style.cursor = 'pointer';
+    li.addEventListener('click', () => { window.location.href = app.url; });
+  } else if (!app.active) {
+    li.style.cursor = 'default';
+    li.style.opacity = '0.5';
+  }
+
+  return li;
 }
 
 // ── Workspaces ────────────────────────────────
