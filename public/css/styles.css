@@ -44,9 +44,10 @@
   --shadow-lg: 0 12px 40px rgba(0,0,0,0.6);
 
   /* Layout */
-  --topbar-h:  50px;
-  --rail-w:    54px;
-  --sidebar-w: 244px;
+  --topbar-h:          50px;
+  --rail-w:            54px;
+  --workspace-strip-w: 152px;
+  --sidebar-w:         244px;
 
   /* Spacing scale (4px base) */
   --sp-1: 4px;
@@ -322,10 +323,10 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
 .topbar__left {
   display: flex;
   align-items: center;
-  width: calc(var(--rail-w) + var(--sidebar-w));
+  width: calc(var(--rail-w) + var(--workspace-strip-w) + var(--sidebar-w));
   flex-shrink: 0;
   padding-left: 8px;
-  gap: 0;
+  gap: 8px;
 }
 
 .hq-link {
@@ -1212,4 +1213,231 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
 .mermaid-diagram:has(+ .mermaid-inline-editor) {
   border-color: var(--primary-600);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+/* ── 15. PHASE 3: NAVIGATION + RESPONSIVE ─── */
+
+/* Rail HQ link (42 logo at top of rail) */
+.rail__hq-link {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  transition: background var(--t-fast);
+  flex-shrink: 0;
+  margin-bottom: 8px;
+  text-decoration: none;
+}
+.rail__hq-link:hover { background: var(--surface-2); }
+
+/* Hamburger button (nav toggle) — hidden on desktop, shown on tablet/mobile */
+.nav-toggle-btn { display: none; }
+
+/* Mobile page title in topbar — hidden on desktop */
+.topbar__page-title {
+  display: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+/* Workspace select in sidebar header — hidden on desktop, shown on tablet/mobile */
+.sidebar__workspace-select { display: none; }
+
+/* ── WORKSPACE STRIP ──────────────────────── */
+.workspace-strip {
+  width: var(--workspace-strip-w);
+  flex-shrink: 0;
+  background: var(--surface-2);
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width var(--t-slow);
+}
+
+.workspace-strip--collapsed {
+  width: 48px;
+}
+
+.workspace-strip__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 6px 4px;
+  flex-shrink: 0;
+}
+
+.workspace-strip--collapsed .workspace-strip__header {
+  justify-content: center;
+}
+
+.workspace-strip__collapse-btn {
+  transition: transform var(--t-base);
+}
+.workspace-strip--collapsed .workspace-strip__collapse-btn {
+  transform: rotate(180deg);
+}
+
+.workspace-strip__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.workspace-strip__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background var(--t-fast), color var(--t-fast);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.workspace-strip__item:hover { background: var(--elevated); color: var(--text-1); }
+.workspace-strip__item--active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.workspace-strip__item i { flex-shrink: 0; }
+.workspace-strip__item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity var(--t-fast), width var(--t-slow);
+}
+.workspace-strip--collapsed .workspace-strip__item-label {
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
+}
+.workspace-strip--collapsed .workspace-strip__item {
+  justify-content: center;
+  padding: 7px;
+}
+
+.workspace-strip__footer {
+  padding: 6px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: center;
+}
+
+/* ── DRAWER BACKDROP (mobile) ─────────────── */
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.drawer-backdrop--visible { display: block; }
+
+/* ── RESPONSIVE BREAKPOINTS ───────────────── */
+
+/* Tablet (768–1023px): hide rail + workspace strip, sidebar toggleable */
+@media (max-width: 1023px) {
+  /* Topbar left no longer needs to match column widths — sidebar is overlay */
+  .topbar__left {
+    width: auto;
+  }
+
+  /* Hide rail and workspace strip */
+  .rail { display: none; }
+  .workspace-strip { display: none; }
+
+  /* Hamburger shows on tablet */
+  .nav-toggle-btn { display: flex; }
+
+  /* App label shows (no hamburger competing for space at tablet) */
+
+  /* Sidebar is collapsed by default on tablet, toggleable */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--topbar-h);
+    bottom: 0;
+    z-index: 250;
+    transform: translateX(-100%);
+    transition: transform var(--t-slow);
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar--open {
+    transform: translateX(0);
+  }
+
+  /* Workspace dropdown visible on tablet (replaces strip) */
+  .sidebar__workspace-label { display: none; }
+  .sidebar__workspace-select {
+    display: block;
+    width: 100%;
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 5px 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-1);
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .sidebar__workspace-select:focus { border-color: var(--accent); }
+
+  /* Content pane fills full width (sidebar is overlay) */
+  .content-pane { width: 100%; }
+
+  /* Editor: single-column on tablet */
+  .editor-split { grid-template-columns: 1fr; }
+  .editor-split .editor-preview { display: none; }
+  .editor-split--split-enabled { grid-template-columns: 1fr 1fr; }
+  .editor-split--split-enabled .editor-preview { display: block; }
+}
+
+/* Mobile (below 768px): full-width content, simplified topbar */
+@media (max-width: 767px) {
+  /* Topbar */
+  .topbar__left {
+    width: auto;
+    flex: 0;
+  }
+  .topbar__app-label { display: none; }
+  .topbar__centre {
+    flex: 1;
+    justify-content: flex-start;
+    padding-left: 4px;
+  }
+  .topbar__page-title { display: block; }
+  .search-trigger { display: none; }
+
+  /* Sidebar drawer sizing on mobile */
+  .sidebar {
+    width: 300px;
+  }
+
+  /* Content is full-width */
+  .body-layout { overflow-x: hidden; }
+
+  /* Page view — reduce padding on mobile */
+  .page-view { padding: var(--sp-4) var(--sp-5) 60px; }
+  .page-title { font-size: 22px; }
+  .article-body { font-size: 15px; }
 }

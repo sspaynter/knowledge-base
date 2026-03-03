@@ -7,6 +7,15 @@ import { showAuthOverlay, hideAuthOverlay } from './auth.js';
 import { toastError }  from './toast.js';
 import { initials }    from './utils.js';
 
+// ── Static app rail config ─────────────────────
+// KB is active. Other app URLs are production SS42 suite URLs.
+const APP_ICONS = [
+  { id: 'kb',        label: 'Knowledge Base', icon: 'book-open',  url: null,                     active: true  },
+  { id: 'applyr',    label: 'Applyr',         icon: 'briefcase',  url: 'https://jobs.ss-42.com', active: false },
+  { id: 'lifeboard', label: 'Lifeboard',      icon: 'check-square', url: 'https://todo.ss-42.com', active: false },
+  { id: 'projects',  label: 'Projects',       icon: 'layers',     url: '#',                      active: false },
+];
+
 // ── Boot ──────────────────────────────────────
 async function boot() {
   applyTheme(store.theme); // Apply persisted theme before any render
@@ -25,6 +34,8 @@ async function initApp() {
   await loadWorkspaces();
   bindTopBar();
   bindShortcuts();
+  bindDrawer();
+  bindWorkspaceStrip();
   window.lucide.createIcons();
 }
 
@@ -32,7 +43,6 @@ async function initApp() {
 function renderAvatar() {
   const el = document.getElementById('avatar-initials');
   if (el && store.user) {
-    // Backend returns display_name (snake_case)
     el.textContent = initials(store.user.display_name || store.user.username);
   }
 }
@@ -49,11 +59,50 @@ async function setHqLink() {
   } catch (_) { /* non-critical — HQ URL is optional */ }
 }
 
+// ── App rail (static SS42 app switcher) ────────
+function renderAppRail() {
+  const rail = document.getElementById('app-rail');
+  if (!rail) return;
+  rail.textContent = '';
+
+  APP_ICONS.forEach(app => {
+    const li = document.createElement('li');
+    li.className = 'rail__item' + (app.active ? ' rail__item--active' : '');
+    li.setAttribute('role', 'listitem');
+    li.title = app.label;
+
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', app.icon);
+    icon.setAttribute('aria-hidden', 'true');
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'rail__tooltip';
+    tooltip.textContent = app.label;
+
+    li.appendChild(icon);
+    li.appendChild(tooltip);
+
+    if (app.url && app.url !== '#') {
+      li.style.cursor = 'pointer';
+      li.addEventListener('click', () => { window.location.href = app.url; });
+    } else if (!app.active) {
+      li.style.cursor = 'default';
+      li.style.opacity = '0.5';
+    }
+
+    rail.appendChild(li);
+  });
+
+  window.lucide.createIcons();
+}
+
 // ── Workspaces ────────────────────────────────
 async function loadWorkspaces() {
   try {
     store.workspaces = await api.listWorkspaces();
-    renderRail();
+    renderAppRail();
+    renderWorkspaceStrip();
+    populateWorkspaceSelect();
     if (store.workspaces.length > 0) {
       await selectWorkspace(store.workspaces[0]);
     }
@@ -62,41 +111,62 @@ async function loadWorkspaces() {
   }
 }
 
-function renderRail() {
-  const rail = document.getElementById('workspace-rail');
-  rail.textContent = ''; // clear without innerHTML
+function renderWorkspaceStrip() {
+  const list = document.getElementById('workspace-strip-list');
+  if (!list) return;
+  list.textContent = '';
 
   store.workspaces.forEach(ws => {
     const li = document.createElement('li');
-    li.className = 'rail__item' + (store.currentWorkspace?.id === ws.id ? ' rail__item--active' : '');
+    li.className = 'workspace-strip__item' +
+      (store.currentWorkspace?.id === ws.id ? ' workspace-strip__item--active' : '');
     li.dataset.id = ws.id;
     li.setAttribute('role', 'listitem');
+    li.title = ws.name;
 
     const icon = document.createElement('i');
     icon.setAttribute('data-lucide', ws.icon || 'folder');
     icon.setAttribute('aria-hidden', 'true');
 
-    const tooltip = document.createElement('span');
-    tooltip.className = 'rail__tooltip';
-    tooltip.textContent = ws.name; // textContent — safe
+    const label = document.createElement('span');
+    label.className = 'workspace-strip__item-label';
+    label.textContent = ws.name;
 
     li.appendChild(icon);
-    li.appendChild(tooltip);
+    li.appendChild(label);
     li.addEventListener('click', () => selectWorkspace(ws));
-    rail.appendChild(li);
+    list.appendChild(li);
   });
 
   window.lucide.createIcons();
+}
+
+/** Populate the sidebar workspace <select> (used on tablet/mobile) */
+function populateWorkspaceSelect() {
+  const sel = document.getElementById('sidebar-workspace-select');
+  if (!sel) return;
+  sel.textContent = '';
+  store.workspaces.forEach(ws => {
+    const opt = document.createElement('option');
+    opt.value = ws.id;
+    opt.textContent = ws.name;
+    if (store.currentWorkspace?.id === ws.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
 }
 
 async function selectWorkspace(ws) {
   store.currentWorkspace = ws;
   store.currentSection   = null;
   store.currentPage      = null;
-  renderRail();
+  renderWorkspaceStrip();
+
+  // Keep select in sync
+  const sel = document.getElementById('sidebar-workspace-select');
+  if (sel) sel.value = ws.id;
 
   const label = document.getElementById('sidebar-workspace-label');
-  if (label) label.textContent = ws.name; // textContent — safe
+  if (label) label.textContent = ws.name;
 
   await loadSections(ws.id);
 }
@@ -129,7 +199,7 @@ function renderSections(sections) {
     icon.setAttribute('aria-hidden', 'true');
 
     const name = document.createElement('span');
-    name.textContent = section.name; // textContent — safe
+    name.textContent = section.name;
 
     const chevron = document.createElement('i');
     chevron.setAttribute('data-lucide', 'chevron-down');
@@ -153,12 +223,18 @@ function renderSections(sections) {
       header.classList.toggle('section-header--collapsed', !nowExpanded);
       store.sidebarState[section.id] = nowExpanded;
       saveSidebarState();
-      if (nowExpanded && !pagesLi.dataset.loaded) {
-        loadPages(section.id, pagesLi);
+      if (nowExpanded) {
+        // Set current section when user expands it
+        store.currentSection = section;
+        if (!pagesLi.dataset.loaded) {
+          loadPages(section.id, pagesLi);
+        }
       }
     });
 
-    if (isExpanded) loadPages(section.id, pagesLi);
+    if (isExpanded) {
+      loadPages(section.id, pagesLi);
+    }
   });
 
   window.lucide.createIcons();
@@ -188,7 +264,7 @@ function renderPageTree(pages, container, parentId = null, depth = 0) {
       icon.setAttribute('aria-hidden', 'true');
 
       const title = document.createElement('span');
-      title.textContent = page.title; // textContent — safe
+      title.textContent = page.title;
 
       item.appendChild(icon);
       item.appendChild(title);
@@ -207,6 +283,14 @@ export async function selectPage(page) {
   document.querySelectorAll('.page-item').forEach(el => {
     el.classList.toggle('page-item--active', el.dataset.id == page.id);
   });
+
+  // Update mobile topbar page title
+  const topbarTitle = document.getElementById('topbar-page-title');
+  if (topbarTitle) topbarTitle.textContent = page.title;
+
+  // Close drawer on mobile after page selection
+  closeSidebar();
+
   try {
     const full = await api.getPage(page.id);
     store.currentPage = full;
@@ -215,6 +299,60 @@ export async function selectPage(page) {
   } catch (_) {
     toastError('Could not load page');
   }
+}
+
+// ── Sidebar drawer (tablet + mobile) ──────────
+function openSidebar() {
+  const sidebar   = document.querySelector('.sidebar');
+  const backdrop  = document.getElementById('drawer-backdrop');
+  const toggleBtn = document.getElementById('nav-toggle-btn');
+  sidebar?.classList.add('sidebar--open');
+  backdrop?.classList.add('drawer-backdrop--visible');
+  toggleBtn?.setAttribute('aria-expanded', 'true');
+}
+
+function closeSidebar() {
+  const sidebar   = document.querySelector('.sidebar');
+  const backdrop  = document.getElementById('drawer-backdrop');
+  const toggleBtn = document.getElementById('nav-toggle-btn');
+  sidebar?.classList.remove('sidebar--open');
+  backdrop?.classList.remove('drawer-backdrop--visible');
+  toggleBtn?.setAttribute('aria-expanded', 'false');
+}
+
+function bindDrawer() {
+  document.getElementById('nav-toggle-btn')?.addEventListener('click', () => {
+    const isOpen = document.querySelector('.sidebar')?.classList.contains('sidebar--open');
+    isOpen ? closeSidebar() : openSidebar();
+  });
+
+  document.getElementById('drawer-backdrop')?.addEventListener('click', closeSidebar);
+}
+
+// ── Workspace strip collapse ───────────────────
+function bindWorkspaceStrip() {
+  const collapseBtn = document.getElementById('workspace-strip-collapse');
+  const strip       = document.getElementById('workspace-strip');
+  if (!collapseBtn || !strip) return;
+
+  // Restore persisted collapse state
+  const collapsed = localStorage.getItem('kb-workspace-strip-collapsed') === 'true';
+  if (collapsed) {
+    strip.classList.add('workspace-strip--collapsed');
+    collapseBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  collapseBtn.addEventListener('click', () => {
+    const isCollapsed = strip.classList.toggle('workspace-strip--collapsed');
+    collapseBtn.setAttribute('aria-expanded', String(!isCollapsed));
+    localStorage.setItem('kb-workspace-strip-collapsed', String(isCollapsed));
+  });
+
+  // Workspace select on tablet/mobile
+  document.getElementById('sidebar-workspace-select')?.addEventListener('change', async (e) => {
+    const ws = store.workspaces.find(w => w.id == e.target.value);
+    if (ws) await selectWorkspace(ws);
+  });
 }
 
 // ── Top bar ───────────────────────────────────
@@ -296,6 +434,7 @@ function bindShortcuts() {
     }
     if (e.key === 'Escape') {
       closeSearch();
+      closeSidebar();
       document.getElementById('settings-overlay').hidden = true;
       document.getElementById('editor-overlay').hidden   = true;
     }
@@ -309,7 +448,8 @@ async function promptAddWorkspace() {
   try {
     const ws = await api.createWorkspace({ name: name.trim(), icon: 'folder' });
     store.workspaces.push(ws);
-    renderRail();
+    renderWorkspaceStrip();
+    populateWorkspaceSelect();
   } catch (_) {
     toastError('Could not create workspace');
   }

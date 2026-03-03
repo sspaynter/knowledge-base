@@ -57,15 +57,14 @@
     <!-- TOP BAR -->
     <header class="topbar" role="banner">
       <div class="topbar__left">
-        <a href="#" id="hq-link" class="hq-link" title="SS42 HQ" aria-label="SS42 HQ">
-          <svg viewBox="0 0 40 40" class="logo-mark" aria-hidden="true">
-            <text x="2" y="30" font-family="Plus Jakarta Sans,sans-serif" font-size="28"
-                  font-weight="600" fill="currentColor">42</text>
-          </svg>
-        </a>
+        <button class="icon-btn nav-toggle-btn" id="nav-toggle-btn"
+                aria-label="Open navigation" aria-expanded="false">
+          <i data-lucide="menu" aria-hidden="true"></i>
+        </button>
         <span class="topbar__app-label">Knowledge Base</span>
       </div>
       <div class="topbar__centre">
+        <span class="topbar__page-title" id="topbar-page-title"></span>
         <button class="search-trigger" id="search-trigger"
                 aria-label="Search (Cmd+K)" aria-keyshortcuts="Meta+K">
           <i data-lucide="search" aria-hidden="true"></i>
@@ -92,21 +91,40 @@
     <!-- BODY -->
     <div class="body-layout">
 
-      <!-- WORKSPACE RAIL (54px) -->
-      <nav class="rail" role="navigation" aria-label="Workspaces">
-        <ul class="rail__list" id="workspace-rail" role="list"></ul>
-        <div class="rail__footer">
-          <button class="rail__add-btn" id="add-workspace-btn"
+      <!-- APP RAIL (54px) — SS42 app switcher -->
+      <nav class="rail" role="navigation" aria-label="App navigation">
+        <a href="#" id="hq-link" class="rail__hq-link" title="SS42 HQ" aria-label="SS42 HQ">
+          <svg viewBox="0 0 40 40" class="logo-mark" aria-hidden="true">
+            <text x="2" y="30" font-family="Plus Jakarta Sans,sans-serif" font-size="28"
+                  font-weight="600" fill="currentColor">42</text>
+          </svg>
+        </a>
+        <ul class="rail__list" id="app-rail" role="list"></ul>
+      </nav>
+
+      <!-- WORKSPACE STRIP — collapsible workspace navigation panel -->
+      <div class="workspace-strip" id="workspace-strip" role="navigation" aria-label="Workspaces">
+        <div class="workspace-strip__header">
+          <button class="icon-btn workspace-strip__collapse-btn" id="workspace-strip-collapse"
+                  title="Collapse workspaces" aria-label="Collapse workspace panel" aria-expanded="true">
+            <i data-lucide="chevrons-left" aria-hidden="true"></i>
+          </button>
+        </div>
+        <ul class="workspace-strip__list" id="workspace-strip-list" role="list"></ul>
+        <div class="workspace-strip__footer">
+          <button class="icon-btn workspace-strip__add-btn" id="add-workspace-btn"
                   title="Add workspace" aria-label="Add workspace">
             <i data-lucide="plus" aria-hidden="true"></i>
           </button>
         </div>
-      </nav>
+      </div>
 
       <!-- SECTION SIDEBAR (244px) -->
       <aside class="sidebar" role="complementary" aria-label="Sections and pages">
         <div class="sidebar__header">
           <span class="sidebar__workspace-label" id="sidebar-workspace-label"></span>
+          <select class="sidebar__workspace-select" id="sidebar-workspace-select"
+                  aria-label="Select workspace"></select>
         </div>
         <nav class="sidebar__nav">
           <ul class="section-list" id="section-list" role="list"></ul>
@@ -129,6 +147,10 @@
       </main>
 
     </div><!-- /body-layout -->
+
+    <!-- DRAWER BACKDROP (mobile — behind sidebar-as-drawer) -->
+    <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+
   </div><!-- /app -->
 
   <!-- SEARCH OVERLAY -->
