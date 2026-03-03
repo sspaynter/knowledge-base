@@ -22,12 +22,27 @@ router.get('/google', oauthLimit, passport.authenticate('google', {
 }));
 
 // GET /auth/google/callback — handle Google's redirect
-router.get('/google/callback', oauthLimit,
-  passport.authenticate('google', { failureRedirect: '/?error=auth_failed' }),
-  (req, res) => {
-    res.redirect('/');
-  }
-);
+router.get('/google/callback', oauthLimit, (req, res, next) => {
+  passport.authenticate('google', (err, user, info) => {
+    if (err) {
+      console.error('[AUTH] Callback error:', err.message, err.stack);
+      return res.redirect('/?error=auth_failed');
+    }
+    if (!user) {
+      console.error('[AUTH] Callback failed — no user. Info:', JSON.stringify(info));
+      return res.redirect('/?error=auth_failed');
+    }
+    console.log('[AUTH] Callback success — user:', user.id, user.email);
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        console.error('[AUTH] Login (serialize) error:', loginErr.message, loginErr.stack);
+        return res.redirect('/?error=auth_failed');
+      }
+      console.log('[AUTH] Session created for user:', user.id);
+      res.redirect('/');
+    });
+  })(req, res, next);
+});
 
 // GET /auth/me — return current user or 401
 router.get('/me', (req, res) => {
