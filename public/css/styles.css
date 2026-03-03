@@ -336,12 +336,11 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
   align-items: center;
   justify-content: center;
   border-radius: var(--r-md);
-  color: var(--text-1);
+  color: var(--accent);
   transition: background var(--t-fast);
   flex-shrink: 0;
 }
-.hq-link:hover { background: var(--surface-2); text-decoration: none; }
-.logo-mark { width: 28px; height: 28px; }
+.hq-link:hover { background: var(--accent-bg); text-decoration: none; }
 
 .topbar__app-label {
   font-size: 13px;
