@@ -1,5 +1,8 @@
 // store.js — Central application state. Import this from any module.
 
+// Resolve initial theme: persisted preference → system preference → dark
+const _systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
 export const store = {
   user:             null,  // { id, username, display_name, role } | null
   workspaces:       [],    // array from /api/workspaces
@@ -7,7 +10,7 @@ export const store = {
   currentSection:   null,  // section object | null
   currentPage:      null,  // full page object (with assets) | null
   sidebarState:     {},    // { [sectionId]: boolean } — true = expanded
-  theme:            localStorage.getItem('kb-theme') || 'dark',
+  theme:            localStorage.getItem('kb-theme') || _systemTheme,
   searchQuery:      '',
   searchResults:    [],
   searchFilter:     'all', // 'all' | 'pages' | 'assets'

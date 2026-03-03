@@ -1,6 +1,9 @@
 // mermaid-init.js — Initializes Mermaid.js and renders diagrams in content.
 // Mermaid is loaded via CDN in index.html (window.mermaid).
 
+import { toastSuccess, toastError } from './toast.js';
+import { store } from './store.js';
+
 let mermaidReady = false;
 let renderCounter = 0;
 
@@ -61,13 +64,73 @@ export async function renderMermaidBlocks(container) {
         wrapper.appendChild(document.adoptNode(svgEl));
       }
 
-      // Add hover toolbar stub (non-functional in Phase 1)
+      // Hover toolbar — Copy SVG, Download PNG, Edit Source
       const toolbar = document.createElement('div');
       toolbar.className = 'mermaid-toolbar';
-      toolbar.appendChild(makeToolbarBtn('copy', 'Copy SVG'));
-      toolbar.appendChild(makeToolbarBtn('download', 'Download PNG'));
-      toolbar.appendChild(makeToolbarBtn('code-2', 'Edit Source'));
+      const copyBtn = makeToolbarBtn('copy', 'Copy SVG');
+      const dlBtn   = makeToolbarBtn('download', 'Download PNG');
+      const editBtn = makeToolbarBtn('code-2', 'Edit Source');
+      toolbar.appendChild(copyBtn);
+      toolbar.appendChild(dlBtn);
+      toolbar.appendChild(editBtn);
       wrapper.appendChild(toolbar);
+
+      // Wire Copy SVG
+      copyBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const svgEl = wrapper.querySelector('svg');
+        if (!svgEl) return;
+        try {
+          const markup = new XMLSerializer().serializeToString(svgEl);
+          await navigator.clipboard.writeText(markup);
+          toastSuccess('SVG copied to clipboard');
+        } catch (_) {
+          toastError('Could not copy SVG — check clipboard permissions');
+        }
+      });
+
+      // Wire Download PNG (SVG → canvas → PNG blob)
+      // Note: external fonts (Plus Jakarta Sans) may not render in the exported PNG;
+      // system-ui fallback is used instead. Acceptable for v2.0.
+      dlBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const svgEl = wrapper.querySelector('svg');
+        if (!svgEl) return;
+
+        const markup = new XMLSerializer().serializeToString(svgEl);
+        const blob   = new Blob([markup], { type: 'image/svg+xml' });
+        const url    = URL.createObjectURL(blob);
+        const img    = new Image();
+
+        img.onload = () => {
+          const scale  = 2; // 2× resolution
+          const canvas = document.createElement('canvas');
+          canvas.width  = img.naturalWidth  * scale;
+          canvas.height = img.naturalHeight * scale;
+          const ctx = canvas.getContext('2d');
+          ctx.scale(scale, scale);
+          ctx.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+
+          canvas.toBlob((pngBlob) => {
+            const pngUrl  = URL.createObjectURL(pngBlob);
+            const a       = document.createElement('a');
+            const pageName = (store.currentPage?.title || 'diagram')
+              .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            a.href     = pngUrl;
+            a.download = pageName + '-diagram.png';
+            a.click();
+            URL.revokeObjectURL(pngUrl);
+          }, 'image/png');
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          toastError('Could not export diagram as PNG');
+        };
+
+        img.src = url;
+      });
 
       pre.replaceWith(wrapper);
     } catch (err) {
@@ -93,6 +156,37 @@ function makeToolbarBtn(icon, label) {
   i.setAttribute('aria-hidden', 'true');
   btn.appendChild(i);
   return btn;
+}
+
+/**
+ * Re-initialize Mermaid with a new theme and re-render all diagrams in the DOM.
+ * Call this when the user toggles dark/light mode.
+ * @param {'dark'|'light'} theme
+ */
+export async function reinitMermaid(theme) {
+  if (!window.mermaid) return;
+  window.mermaid.initialize({
+    startOnLoad: false,
+    theme: theme === 'light' ? 'default' : 'dark',
+    themeVariables: {
+      primaryColor: '#4f46e5',
+      primaryTextColor: theme === 'light' ? '#111118' : '#f0ede8',
+      primaryBorderColor: '#6366f1',
+      lineColor: '#6366f1',
+      secondaryColor: theme === 'light' ? '#e0e0f0' : '#1e1b4b',
+      tertiaryColor:  theme === 'light' ? '#f5f5f9' : '#18181f',
+    },
+    flowchart: { curve: 'basis', padding: 16 },
+    fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+    fontSize: 13,
+  });
+
+  // Re-render all diagrams currently visible in the content pane
+  const diagrams = document.querySelectorAll('.mermaid-diagram[data-mermaid-source]');
+  for (const wrapper of diagrams) {
+    const source = wrapper.dataset.mermaidSource;
+    if (source) await rerenderDiagram(wrapper, source);
+  }
 }
 
 /**

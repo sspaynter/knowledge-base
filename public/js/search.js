@@ -50,7 +50,11 @@ function renderResults(results) {
 
     const path = document.createElement('div');
     path.className = 'search-result-item__path';
-    path.textContent = item.breadcrumb || item.type || ''; // textContent — safe
+    // Pages return workspace_name + section_name; assets return type
+    path.textContent = item.breadcrumb ||
+      (item.workspace_name && item.section_name
+        ? item.workspace_name + ' › ' + item.section_name
+        : item.type || ''); // textContent — safe
 
     li.appendChild(title);
     li.appendChild(path);

@@ -360,10 +360,13 @@ function bindTopBar() {
   // Theme toggle
   const themeBtn  = document.getElementById('theme-btn');
   const themeIcon = document.getElementById('theme-icon');
-  themeBtn?.addEventListener('click', () => {
+  themeBtn?.addEventListener('click', async () => {
     toggleTheme();
     themeIcon?.setAttribute('data-lucide', store.theme === 'dark' ? 'moon' : 'sun');
     window.lucide.createIcons();
+    // Re-render Mermaid diagrams with updated theme
+    const { reinitMermaid } = await import('./mermaid-init.js');
+    reinitMermaid(store.theme);
   });
   themeIcon?.setAttribute('data-lucide', store.theme === 'dark' ? 'moon' : 'sun');
 
@@ -457,6 +460,11 @@ async function promptAddWorkspace() {
 
 // ── Auth event listener ───────────────────────
 window.addEventListener('kb:authed', () => initApp());
+
+// ── Service worker registration ───────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => { /* non-critical */ });
+}
 
 // ── Start ─────────────────────────────────────
 boot();

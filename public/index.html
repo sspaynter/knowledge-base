@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Knowledge Base</title>
 
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Knowledge Base" />
+  <link rel="apple-touch-icon" href="/icons/kb-icon.svg" />
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -61,6 +69,12 @@
                 aria-label="Open navigation" aria-expanded="false">
           <i data-lucide="menu" aria-hidden="true"></i>
         </button>
+        <a href="#" id="hq-link" class="hq-link" title="SS42 HQ" aria-label="SS42 HQ">
+          <svg viewBox="0 0 40 40" class="logo-mark" aria-hidden="true">
+            <text x="2" y="30" font-family="Plus Jakarta Sans,sans-serif" font-size="28"
+                  font-weight="600" fill="currentColor">42</text>
+          </svg>
+        </a>
         <span class="topbar__app-label">Knowledge Base</span>
       </div>
       <div class="topbar__centre">
@@ -93,12 +107,6 @@
 
       <!-- APP RAIL (54px) — SS42 app switcher -->
       <nav class="rail" role="navigation" aria-label="App navigation">
-        <a href="#" id="hq-link" class="rail__hq-link" title="SS42 HQ" aria-label="SS42 HQ">
-          <svg viewBox="0 0 40 40" class="logo-mark" aria-hidden="true">
-            <text x="2" y="30" font-family="Plus Jakarta Sans,sans-serif" font-size="28"
-                  font-weight="600" fill="currentColor">42</text>
-          </svg>
-        </a>
         <ul class="rail__list" id="app-rail" role="list"></ul>
       </nav>
 
