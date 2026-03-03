@@ -5,6 +5,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const db = require('./services/database');
+const { startWatcher } = require('./services/vault-sync');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/pages',         require('./routes/pages'));
 app.use('/api/assets',        require('./routes/assets'));
 app.use('/api/relationships', require('./routes/relationships'));
 app.use('/api/search',        require('./routes/search'));
+app.use('/api/sync',          require('./routes/sync'));
 app.use('/api/upload',        require('./routes/upload'));
 
 // ── Admin routes ───────────────────────────────────────────
@@ -55,6 +57,7 @@ app.use(errorHandler);
 // ── Start ──────────────────────────────────────────────────
 if (require.main === module) {
   db.init().then(() => {
+    startWatcher();
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Knowledge Platform running on port ${PORT}`);

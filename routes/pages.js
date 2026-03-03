@@ -7,6 +7,19 @@ const { requireAuth, requireRole } = require('../middleware/requireAuth');
 
 router.use(requireAuth);
 
+// GET /api/pages/by-path?path=relative/path.md
+// Looks up by current file_path, then falls back to previous_paths.
+router.get('/by-path', async (req, res, next) => {
+  try {
+    const filePath = req.query.path;
+    if (!filePath) return res.status(400).json({ error: 'path query parameter is required' });
+
+    const page = await pages.getPageByPath(filePath);
+    if (!page) return res.status(404).json({ error: 'Not found' });
+    res.json(page);
+  } catch (err) { next(err); }
+});
+
 router.get('/section/:sectionId', async (req, res, next) => {
   try {
     res.json(await pages.getPageTree(req.params.sectionId));

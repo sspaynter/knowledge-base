@@ -4,8 +4,12 @@
 
 import { store }        from './store.js';
 import { setMarkdownContent, formatDate } from './utils.js';
+import { initMermaid, renderMermaidBlocks } from './mermaid-init.js';
 import { toastError }   from './toast.js';
 import * as api         from './api.js';
+
+// Initialize Mermaid once on module load
+initMermaid();
 
 const pane = document.getElementById('content-pane');
 
@@ -46,6 +50,11 @@ export function renderPage(page) {
 
   pane.appendChild(view);
   window.lucide.createIcons();
+
+  // Render Mermaid diagrams after content is in the DOM
+  renderMermaidBlocks(view).then(() => {
+    window.lucide.createIcons(); // Re-render icons for toolbar buttons
+  });
 }
 
 // ── Breadcrumb ──────────────────────────────

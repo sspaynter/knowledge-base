@@ -1,7 +1,9 @@
 // services/pages.js
 'use strict';
 
+const fs = require('fs');
 const { getPool } = require('./database');
+const { isVaultEnabled, resolveVaultPath } = require('./vault-config');
 
 // ── Tree query: all pages for a section ───────────────────
 async function getPageTree(sectionId) {
@@ -21,7 +23,7 @@ function buildTree(rows, parentId = null) {
     .map(r => ({ ...r, children: buildTree(rows, r.id) }));
 }
 
-// ── Single page ────────────────────────────────────────────
+// ── Single page (with vault read fallback) ────────────────
 async function getPage(id) {
   const res = await getPool().query(`
     SELECT p.*, s.workspace_id,
@@ -34,7 +36,74 @@ async function getPage(id) {
     JOIN knowledge_base.sections s ON s.id = p.section_id
     WHERE p.id = $1 AND p.deleted_at IS NULL
   `, [id]);
-  return res.rows[0] || null;
+
+  const page = res.rows[0] || null;
+  if (page) {
+    page.content = resolveContent(page);
+  }
+  return page;
+}
+
+// ── Lookup by file_path (current or previous) ─────────────
+async function getPageByPath(filePath) {
+  const pool = getPool();
+
+  // Try current file_path
+  let res = await pool.query(`
+    SELECT p.*, s.workspace_id,
+      (SELECT json_agg(a.* ORDER BY pa.sort_order)
+       FROM knowledge_base.page_assets pa
+       JOIN knowledge_base.assets a ON a.id = pa.asset_id
+       WHERE pa.page_id = p.id AND a.deleted_at IS NULL
+      ) AS assets
+    FROM knowledge_base.pages p
+    JOIN knowledge_base.sections s ON s.id = p.section_id
+    WHERE p.file_path = $1 AND p.deleted_at IS NULL
+  `, [filePath]);
+
+  if (res.rows.length === 0) {
+    // Fall back to previous_paths
+    res = await pool.query(`
+      SELECT p.*, s.workspace_id,
+        (SELECT json_agg(a.* ORDER BY pa.sort_order)
+         FROM knowledge_base.page_assets pa
+         JOIN knowledge_base.assets a ON a.id = pa.asset_id
+         WHERE pa.page_id = p.id AND a.deleted_at IS NULL
+        ) AS assets
+      FROM knowledge_base.pages p
+      JOIN knowledge_base.sections s ON s.id = p.section_id
+      WHERE p.previous_paths @> $1::jsonb AND p.deleted_at IS NULL
+    `, [JSON.stringify(filePath)]);
+  }
+
+  const page = res.rows[0] || null;
+  if (page) {
+    page.content = resolveContent(page);
+  }
+  return page;
+}
+
+// ── Three-layer content fallback ──────────────────────────
+// 1. Vault file (if file_path set and vault enabled)
+// 2. content_cache (synced copy in DB)
+// 3. content column (pre-migration pages)
+function resolveContent(page) {
+  if (page.file_path && isVaultEnabled()) {
+    try {
+      const absPath = resolveVaultPath(page.file_path);
+      if (fs.existsSync(absPath)) {
+        return fs.readFileSync(absPath, 'utf8');
+      }
+    } catch {
+      // Fall through to content_cache
+    }
+  }
+
+  if (page.content_cache) {
+    return page.content_cache;
+  }
+
+  return page.content;
 }
 
 // ── Create ─────────────────────────────────────────────────
@@ -85,4 +154,4 @@ async function deletePage(id) {
   );
 }
 
-module.exports = { getPageTree, getPage, createPage, updatePage, movePage, deletePage };
+module.exports = { getPageTree, getPage, getPageByPath, createPage, updatePage, movePage, deletePage };

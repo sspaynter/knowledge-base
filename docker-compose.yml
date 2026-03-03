@@ -17,9 +17,13 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
       UPLOAD_DIR: /app/uploads
+      VAULT_DIR: /app/vault
+      CHOKIDAR_USEPOLLING: "true"
     volumes:
       # Persist uploads across container restarts
       - ./uploads:/app/uploads
+      # Mount vault directory (local path configurable via VAULT_PATH env var)
+      - ${VAULT_PATH:-./vault}:/app/vault
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]

@@ -1,12 +1,12 @@
 name: Build and deploy
 
-# Triggers on push to main.
-# Builds image → pushes to GHCR with :latest and :sha- tags.
-# Watchtower on the NAS detects the :latest update and auto-pulls.
+# Triggers on push to main or dev.
+# main → :latest tag (production). dev → :dev tag (staging).
+# Watchtower on the NAS detects tag updates and auto-pulls.
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 env:
   REGISTRY: ghcr.io
@@ -40,6 +40,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
             type=sha,prefix=sha-
 
       - name: Build and push

@@ -21,17 +21,18 @@ COPY middleware/ ./middleware/
 COPY services/ ./services/
 COPY scripts/ ./scripts/
 
-# Create uploads directory with correct ownership
-# UPLOAD_DIR env var defaults to /app/uploads (override in container env)
+# Create uploads and vault directories with correct ownership
 ENV UPLOAD_DIR=/app/uploads
-RUN mkdir -p /app/uploads && chown -R app:app /app
+ENV VAULT_DIR=/app/vault
+ENV CHOKIDAR_USEPOLLING=true
+RUN mkdir -p /app/uploads /app/vault && chown -R app:app /app
 
 # Switch to non-root user
 USER app
 
 EXPOSE 3000
 
-# Health check — /api/health route from routes/health.js
+# Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
