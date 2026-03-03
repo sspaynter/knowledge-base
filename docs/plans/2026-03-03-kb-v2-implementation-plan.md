@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-03
 **Design Spec:** `docs/plans/2026-03-02-knowledge-base-v2-design.md`
-**Status:** Phase 1 + Phase 2 + Phase 3 COMPLETE — deployed to staging
+**Status:** Phase 1 + Phase 2 + Phase 3 + Phase 4 COMPLETE — deployed to staging
 
 ---
 
@@ -413,7 +413,47 @@ All 6 tasks completed. App rail repurposed as SS42 suite switcher. Workspace str
 
 **Remaining deferred items from Phase 3 spec:**
 - Editor single-view toggle on mobile (CSS scaffolding is in place, mode toggle button not yet wired for mobile)
-- HQ launcher overlay for "42" logo (deferred, links to `#` currently)
+- HQ launcher overlay for "42" logo (resolved in Phase 4: logo moved back to topbar, KB icon in rail removed)
+
+---
+
+### Phase 4 — COMPLETED (session 32, 2026-03-03)
+
+All 6 tasks completed. PWA manifest, service worker, search breadcrumb fix, diagram export wired, dark/light mode improvements, "42" logo moved back to topbar.
+
+**Logo fix (pre-Phase 4):**
+- `rail__hq-link` element removed from rail — rail starts directly with app icons
+- "42" SVG logo restored to topbar left (`id="hq-link"`, class `hq-link`), hidden on tablet/mobile via media query
+- `rail__hq-link` CSS rules removed from styles.css; `.hq-link { display: none }` added to ≤768px breakpoint
+
+**Files created:**
+- `public/manifest.json` — PWA manifest (name, theme_color #4f46e5, standalone display, SVG icon)
+- `public/icons/kb-icon.svg` — 512×512 indigo background, "KB" white text
+- `public/sw.js` — service worker: cache-first for static, network-first for API, offline fallback page
+
+**Files modified:**
+- `public/index.html` — `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, manifest link, logo fix
+- `public/css/styles.css` — rail__hq-link rules removed, .hq-link mobile hide added
+- `public/js/app.js` — SW registration after boot, theme toggle now calls `reinitMermaid()`, lazy import
+- `public/js/mermaid-init.js` — imports added (toast, store), Copy SVG + Download PNG wired in renderMermaidBlocks(), `reinitMermaid(theme)` export added
+- `public/js/search.js` — breadcrumb path fix: compose `workspace_name › section_name` for page results
+- `public/js/store.js` — initial theme now uses `prefers-color-scheme` when no localStorage value saved
+
+**Key technical decisions:**
+- SVG icon in manifest (`"sizes": "any"`) — works in all modern desktop/Android browsers; iOS requires PNG (not blocked for v2.0)
+- SW pre-caches 15 static assets on install; uses `Promise.allSettled` so individual failures are non-fatal
+- Copy SVG: `XMLSerializer.serializeToString(svgEl)` — the SVG was parsed via DOMParser so this is safe
+- Download PNG: `canvas.toBlob()` at 2× resolution; `store.currentPage.title` for filename; font caveat documented
+- `reinitMermaid()` re-calls `window.mermaid.initialize()` then re-renders all visible `.mermaid-diagram` elements — Mermaid supports re-initialization
+- `prefers-color-scheme` uses `window.matchMedia?.()` with optional chaining (safe in all target browsers)
+
+**Infrastructure:**
+- Committed to `dev` branch, GitHub Actions built `:dev` in 44s, Watchtower deployed to `kb-staging`
+
+**Deferred from Phase 4 spec:**
+- Workspace/section filter chips in search (not built — all/pages/assets chips sufficient for now; backend would need changes)
+- Search result excerpt highlighting (ts_headline output rendered as plain text — consistent with no-innerHTML policy; full highlighting deferred)
+- iOS app icon (requires PNG; SVG fallback in place — acceptable for v2.0)
 
 ---
 
