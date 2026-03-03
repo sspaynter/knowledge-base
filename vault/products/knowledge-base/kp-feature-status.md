@@ -160,10 +160,13 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 
 | Feature | Status | Notes |
 |---|---|---|
-| Unit tests | Not built | Phase 6 |
-| API endpoint tests | Not built | Phase 6 |
-| npm test CI gate | Not built | Phase 6 — currently CI builds without test gate |
-| Production deploy | Not done | Phase 6 — v1.0.0 still live at kb.ss-42.com |
+| Vault sync unit tests | Live | 20 tests: slugify, titleFromFilename, inferLocationFromPath, handleAdd, handleChange, handleUnlink |
+| API endpoint tests | Live | 40+ tests across pages, assets, workspaces, inbox, search, sync, health — Bearer auth |
+| Mermaid rendering tests | Live | 8 tests: security invariants (no innerHTML, DOMParser) + DB storage round-trip |
+| Migration script tests | Live | 20 tests: schema idempotency, seed idempotency, GENERATED ALWAYS AS behaviour, helper functions |
+| npm test CI gate | Live | GitHub Actions: test job (Postgres service) gates build job — fail fast on test failures |
+| .dockerignore | Live | Excludes node_modules, tests, vault, docs from build context |
+| Production deploy | Pending | v1.0.0 still live at kb.ss-42.com — Task 6.7 awaits staging review |
 
 ---
 
@@ -188,6 +191,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | 32 | 4 | PWA manifest, service worker, Cmd+K search, search breadcrumb fix, diagram export (SVG/PNG), dark/light mode, two-tier rail refactor |
 | 33 | 5 | Migration script, inbox endpoint, asset browser, page status filtering, map diagram toggle |
 | 34 | — | Favicon fix, kp-architecture.md updated (Phases 2–5), kp-design-decisions.md updated (ADR-006 superseded, ADR-009 added, ADR-008 updated) |
+| 36 | 6 | 88 tests (17 suites), CI/CD test gate, .dockerignore, vault taxonomy restructured (it-and-projects → operations/products/personal), NAS vault + DB cleaned, kb-vault-management.md written |
 
 ---
 

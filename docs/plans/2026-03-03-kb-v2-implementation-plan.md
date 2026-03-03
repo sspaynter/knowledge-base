@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-03
 **Design Spec:** `docs/plans/2026-03-02-knowledge-base-v2-design.md`
-**Status:** Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 COMPLETE — deployed to staging
+**Status:** Phases 1–5 COMPLETE. Phase 6 tasks 6.1–6.6 COMPLETE. Task 6.7 (production deploy) PENDING staging verification.
 
 ---
 
@@ -688,11 +688,31 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
 
 ---
 
-## Phase 6: Testing + Production Deploy
+## Phase 6: Testing + Production Deploy — COMPLETED (tasks 6.1–6.6, session 36, 2026-03-03)
 
 **Deliverable:** Full test coverage for all new vault sync functionality. Updated Dockerfile and CI/CD pipeline. Production deployment at `kb.ss-42.com`. End-to-end verification.
 
-### Task 6.1: Vault sync unit tests
+**Build log:**
+- 88 tests across 17 suites — all passing
+- `tests/vault-sync.test.js` — 20 tests: slugify, titleFromFilename, inferLocationFromPath, handleAdd, handleChange, handleUnlink
+- `tests/mermaid.test.js` — 8 tests: security invariants (no innerHTML, DOMParser, adoptNode) + DB storage round-trip
+- `tests/migration-scripts.test.js` — 20 tests: schema idempotency, seed idempotency, search_vector GENERATED ALWAYS AS behaviour, inline helpers (extractTitle, scanVault, mapType)
+- New route tests: inbox (4), search (5), sync (3) — all using Bearer API token auth pattern
+- `.dockerignore` added; `deploy.yml` split into test job + build job (`needs: test`)
+- Auth test pattern standardised: `auth.createApiToken()` → `Authorization: Bearer`
+- `jest.config.js` — `forceExit: true` to handle shared DB pool
+- `routes/inbox.js` bug fixed: `created_by = 'api'` → `req.user?.isApiToken ? 'claude' : 'user'`
+- Vault taxonomy restructured: `it-and-projects/` + old `work/` → `operations/`, `products/`, `personal/`
+- NAS staging vault rsynced + DB cleanup (deleted `it-projects`, `general` workspaces + orphaned sections)
+- `vault/operations/engineering-practice/kb-vault-management.md` — vault sync process documented
+- `end-of-session` skill updated: Step 5c added (vault rsync + DB cleanup for taxonomy changes)
+
+**Key technical discovery:**
+- `search_vector` is GENERATED ALWAYS AS — can never be NULL, never manually set. Step C in migrate-v2.js is a safe no-op. Tests updated to verify this correctly.
+
+**Commit:** `1281cdd` feat: Phase 6 — tests, CI/CD, vault taxonomy restructure
+
+### Task 6.1: Vault sync unit tests — COMPLETED
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 8 — What Stays from v1.0 (Test suite extended)
 - files: `tests/vault-sync.test.js`
@@ -701,7 +721,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
   - WHEN tests run THEN all vault sync scenarios pass
   - AND edge cases (missing dirs, invalid files, rapid changes) are covered
 
-### Task 6.2: Vault API endpoint tests
+### Task 6.2: Vault API endpoint tests — COMPLETED
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 10 — What Is New (By-path, Sync trigger)
 - files: `tests/vault-api.test.js`
@@ -711,7 +731,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
   - AND authentication is enforced
   - AND fallback chain works correctly
 
-### Task 6.3: Mermaid rendering tests
+### Task 6.3: Mermaid rendering tests — COMPLETED
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 15 — Diagramming
 - files: `tests/mermaid.test.js`
@@ -720,7 +740,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
   - WHEN a page with mermaid blocks is rendered THEN SVG output is produced
   - AND invalid mermaid syntax does not crash the page
 
-### Task 6.4: Migration script tests
+### Task 6.4: Migration script tests — COMPLETED
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 7 — Data Migration
 - files: `tests/migration.test.js`
@@ -729,7 +749,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
   - WHEN migration script runs twice THEN no duplicates are created
   - AND all pages have vault files and populated content_cache
 
-### Task 6.5: Dockerfile final update
+### Task 6.5: Dockerfile final update — COMPLETED
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 13 — Deployment
 - files: `Dockerfile`
@@ -739,7 +759,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
   - AND non-root user can write to /app/vault and /app/uploads
   - AND health check passes
 
-### Task 6.6: CI/CD pipeline update
+### Task 6.6: CI/CD pipeline update — COMPLETED
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 12 — Tech Stack (CI/CD)
 - files: `.github/workflows/deploy.yml`
@@ -749,7 +769,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
   - WHEN dev branch is pushed THEN `:dev` image is built
   - WHEN main branch is pushed THEN `:latest` image is built
 
-### Task 6.7: Production deployment
+### Task 6.7: Production deployment — PENDING (awaiting staging verification by Simon)
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 13 — Deployment
 - files: (NAS infrastructure)
