@@ -64,4 +64,21 @@ router.delete('/:id', requireRole('editor'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/pages/:id/versions — list version history
+router.get('/:id/versions', async (req, res, next) => {
+  try {
+    const versions = await pages.getPageVersions(req.params.id);
+    res.json(versions);
+  } catch (err) { next(err); }
+});
+
+// POST /api/pages/:id/versions/:versionId/restore — restore a version
+router.post('/:id/versions/:versionId/restore', requireRole('editor'), async (req, res, next) => {
+  try {
+    const page = await pages.restorePageVersion(req.params.id, req.params.versionId);
+    if (!page) return res.status(404).json({ error: 'Version not found' });
+    res.json(page);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

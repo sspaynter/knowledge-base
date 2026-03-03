@@ -75,9 +75,7 @@ function configurePassport() {
     async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
-        console.log('[AUTH] Google verify callback — email:', email);
         if (!email) {
-          console.error('[AUTH] No email in Google profile');
           return done(null, false, { message: 'no_email' });
         }
         const googleId = profile.id;
@@ -89,7 +87,6 @@ function configurePassport() {
           'SELECT email FROM shared_auth.allowed_emails WHERE email = $1',
           [email]
         );
-        console.log('[AUTH] Allowed emails check:', allowed.rows.length > 0 ? 'PASS' : 'DENIED');
         if (allowed.rows.length === 0) {
           return done(null, false, { message: 'not_allowed' });
         }
@@ -128,11 +125,9 @@ function configurePassport() {
         }
 
         const sharedUser = result.rows[0];
-        console.log('[AUTH] Shared user found/created:', sharedUser.id, sharedUser.email);
 
         // Ensure KB-specific user exists
         const kbUser = await getOrCreateKBUser(sharedUser);
-        console.log('[AUTH] KB user mapped:', kbUser.id, 'role:', kbUser.role);
         sharedUser.role = kbUser.role;
         sharedUser.display_name = sharedUser.name;
         sharedUser.kb_user_id = kbUser.id;

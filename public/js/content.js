@@ -4,8 +4,8 @@
 
 import { store }        from './store.js';
 import { setMarkdownContent, formatDate } from './utils.js';
-import { initMermaid, renderMermaidBlocks } from './mermaid-init.js';
-import { toastError }   from './toast.js';
+import { initMermaid, renderMermaidBlocks, rerenderDiagram } from './mermaid-init.js';
+import { toastError, toastSuccess } from './toast.js';
 import * as api         from './api.js';
 
 // Initialize Mermaid once on module load
@@ -54,6 +54,7 @@ export function renderPage(page) {
   // Render Mermaid diagrams after content is in the DOM
   renderMermaidBlocks(view).then(() => {
     window.lucide.createIcons(); // Re-render icons for toolbar buttons
+    setupClickToEdit(view, page);
   });
 }
 
@@ -210,6 +211,140 @@ function buildAssetPanel(assets) {
   });
 
   return panel;
+}
+
+// ── Click-to-edit Mermaid diagrams ────────────
+// Clicking a rendered diagram opens an inline code editor panel.
+// Changes update the diagram live; Apply writes back to the page content.
+function setupClickToEdit(view, page) {
+  const diagrams = view.querySelectorAll('.mermaid-diagram');
+  diagrams.forEach((wrapper) => {
+    // Wire the "Edit Source" toolbar button
+    const editBtn = wrapper.querySelector('[aria-label="Edit Source"]');
+    if (editBtn) {
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openInlineEditor(wrapper, page);
+      });
+    }
+    // Also wire diagram click (if no panel already open)
+    wrapper.addEventListener('click', (e) => {
+      if (e.target.closest('.mermaid-toolbar')) return;
+      if (wrapper.querySelector('.mermaid-inline-editor')) return; // already open
+      openInlineEditor(wrapper, page);
+    });
+  });
+}
+
+let inlineEditorTimer = null;
+
+function openInlineEditor(wrapper, page) {
+  // Close any other open inline editors first
+  document.querySelectorAll('.mermaid-inline-editor').forEach(el => el.remove());
+
+  const originalSource = wrapper.dataset.mermaidSource || '';
+
+  const panel = document.createElement('div');
+  panel.className = 'mermaid-inline-editor';
+  panel.setAttribute('role', 'region');
+  panel.setAttribute('aria-label', 'Edit diagram source');
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'mermaid-inline-editor__header';
+  const headerLabel = document.createElement('span');
+  headerLabel.textContent = 'Edit diagram source';
+  headerLabel.className = 'mermaid-inline-editor__title';
+  const applyBtn = document.createElement('button');
+  applyBtn.className = 'btn btn--primary btn--sm';
+  applyBtn.textContent = 'Apply';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn btn--ghost btn--sm';
+  cancelBtn.textContent = 'Cancel';
+  header.appendChild(headerLabel);
+  header.appendChild(cancelBtn);
+  header.appendChild(applyBtn);
+  panel.appendChild(header);
+
+  // Textarea
+  const ta = document.createElement('textarea');
+  ta.className = 'mermaid-inline-editor__textarea';
+  ta.setAttribute('aria-label', 'Mermaid diagram source');
+  ta.setAttribute('spellcheck', 'false');
+  ta.value = originalSource;
+  panel.appendChild(ta);
+
+  // Insert after the wrapper
+  wrapper.insertAdjacentElement('afterend', panel);
+  ta.focus();
+
+  // Live preview as user types (debounced 500ms)
+  ta.addEventListener('input', () => {
+    clearTimeout(inlineEditorTimer);
+    inlineEditorTimer = setTimeout(() => {
+      rerenderDiagram(wrapper, ta.value);
+    }, 500);
+  });
+
+  // Cancel — restore original and close
+  cancelBtn.addEventListener('click', () => {
+    rerenderDiagram(wrapper, originalSource);
+    panel.remove();
+  });
+
+  // Escape key — cancel
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      rerenderDiagram(wrapper, originalSource);
+      panel.remove();
+    }
+  });
+
+  // Apply — write back to page content and close
+  applyBtn.addEventListener('click', async () => {
+    const newSource = ta.value;
+    if (!page || !page.id) {
+      panel.remove();
+      return;
+    }
+
+    // Replace the old mermaid fence in page.content with the new source
+    const updatedContent = replaceMermaidBlock(page.content || '', originalSource, newSource);
+
+    applyBtn.disabled = true;
+    applyBtn.textContent = 'Saving…';
+
+    try {
+      await api.updatePage(page.id, { content: updatedContent });
+      page.content = updatedContent;
+      wrapper.dataset.mermaidSource = newSource;
+      toastSuccess('Diagram saved');
+    } catch (err) {
+      toastError('Save failed: ' + err.message);
+    } finally {
+      applyBtn.disabled = false;
+      applyBtn.textContent = 'Apply';
+    }
+
+    panel.remove();
+  });
+}
+
+/**
+ * Replace a mermaid code fence in markdown content.
+ * Finds the fence containing originalSource and replaces it with newSource.
+ * @param {string} content        Full page markdown
+ * @param {string} originalSource Original mermaid diagram source
+ * @param {string} newSource      New mermaid diagram source
+ * @returns {string}
+ */
+function replaceMermaidBlock(content, originalSource, newSource) {
+  const escaped = originalSource.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp('```mermaid\\s*\\n' + escaped + '\\s*\\n```', '');
+  const replacement = '```mermaid\n' + newSource + '\n```';
+  const result = content.replace(pattern, replacement);
+  // If no match found, return content unchanged
+  return result;
 }
 
 // ── Asset detail ─────────────────────────────

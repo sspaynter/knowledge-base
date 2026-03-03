@@ -1,10 +1,13 @@
 // editor.js — Page editor overlay.
+// Split-view: markdown source left, rendered preview right.
 // Preview uses setMarkdownContent (DOMPurify + DOMParser, no innerHTML).
 
 import * as api      from './api.js';
 import { store }     from './store.js';
 import { setMarkdownContent } from './utils.js';
 import { toastSuccess, toastError } from './toast.js';
+import { renderMermaidBlocks } from './mermaid-init.js';
+import { openDiagramPicker } from './diagram-templates.js';
 
 const overlay    = document.getElementById('editor-overlay');
 const titleInput = document.getElementById('editor-title');
@@ -12,10 +15,13 @@ const textarea   = document.getElementById('editor-textarea');
 const preview    = document.getElementById('editor-preview');
 const saveBtn    = document.getElementById('editor-save');
 const discardBtn = document.getElementById('editor-discard');
+const split      = document.getElementById('editor-split');
+const modeBtnEl  = document.getElementById('editor-mode-btn');
 
 let currentPage   = null;
 let autoSaveTimer = null;
 let isDirty       = false;
+let splitMode     = true; // true = split view, false = full-width source
 
 /**
  * Open the editor overlay for a page.
@@ -29,7 +35,7 @@ export function openEditor(page) {
 
   updatePreview();
   overlay.hidden = false;
-  titleInput.focus();
+  textarea.focus();
 
   clearInterval(autoSaveTimer);
   autoSaveTimer = setInterval(autoSave, 30_000);
@@ -44,16 +50,18 @@ export function closeEditor() {
 }
 
 // ── Live preview ─────────────────────────────
-function updatePreview() {
+async function updatePreview() {
   // setMarkdownContent: DOMPurify.sanitize → DOMParser → appendChild (no innerHTML)
   setMarkdownContent(preview, textarea.value);
+  // Render Mermaid diagrams in the preview pane
+  await renderMermaidBlocks(preview);
 }
 
 let previewTimer = null;
 textarea.addEventListener('input', () => {
   isDirty = true;
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(updatePreview, 300);
+  previewTimer = setTimeout(updatePreview, 500);
 });
 
 titleInput.addEventListener('input', () => { isDirty = true; });
@@ -110,3 +118,77 @@ discardBtn.addEventListener('click', () => {
   if (isDirty && !window.confirm('Discard unsaved changes?')) return;
   closeEditor();
 });
+
+// ── Mode toggle: split / full-width source ────
+if (modeBtnEl) {
+  modeBtnEl.addEventListener('click', () => {
+    splitMode = !splitMode;
+    split.classList.toggle('editor-split--source-only', !splitMode);
+    modeBtnEl.setAttribute('aria-pressed', String(splitMode));
+  });
+}
+
+// ── Toolbar formatting actions ─────────────────
+const toolbarEl = document.querySelector('.editor-toolbar');
+if (toolbarEl) {
+  toolbarEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'diagram') {
+      openDiagramPicker(btn, insertAtCursor);
+      return;
+    }
+    applyFormat(action);
+  });
+}
+
+function applyFormat(action) {
+  const ta = textarea;
+  const start = ta.selectionStart;
+  const end   = ta.selectionEnd;
+  const sel   = ta.value.slice(start, end);
+  let before = '', after = '';
+
+  switch (action) {
+    case 'bold':        before = '**'; after = '**'; break;
+    case 'italic':      before = '_'; after = '_'; break;
+    case 'heading':     before = '## '; after = ''; break;
+    case 'link':        before = '['; after = '](url)'; break;
+    case 'code':
+      if (sel.includes('\n')) { before = '```\n'; after = '\n```'; }
+      else                    { before = '`'; after = '`'; }
+      break;
+    case 'bullet-list': before = '- '; after = ''; break;
+    default: return;
+  }
+
+  const newVal = ta.value.slice(0, start) + before + sel + after + ta.value.slice(end);
+  ta.value = newVal;
+  const cursor = start + before.length + sel.length + after.length;
+  ta.setSelectionRange(cursor, cursor);
+  ta.focus();
+
+  isDirty = true;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(updatePreview, 500);
+}
+
+/**
+ * Insert text at cursor position in the editor textarea.
+ * @param {string} text
+ */
+export function insertAtCursor(text) {
+  const ta = textarea;
+  const start = ta.selectionStart;
+  const end   = ta.selectionEnd;
+  const newVal = ta.value.slice(0, start) + text + ta.value.slice(end);
+  ta.value = newVal;
+  const pos = start + text.length;
+  ta.setSelectionRange(pos, pos);
+  ta.focus();
+
+  isDirty = true;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(updatePreview, 500);
+}

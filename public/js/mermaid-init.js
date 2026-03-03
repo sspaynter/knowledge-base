@@ -94,3 +94,46 @@ function makeToolbarBtn(icon, label) {
   btn.appendChild(i);
   return btn;
 }
+
+/**
+ * Re-render a single .mermaid-diagram wrapper with new Mermaid source.
+ * Updates the SVG in place and stores new source in dataset.mermaidSource.
+ * @param {HTMLElement} wrapper   The .mermaid-diagram element
+ * @param {string}      newSource The updated Mermaid diagram source
+ */
+export async function rerenderDiagram(wrapper, newSource) {
+  if (!mermaidReady || !window.mermaid || !newSource.trim()) return;
+
+  const diagramId = `mermaid-diagram-${++renderCounter}`;
+  try {
+    const { svg } = await window.mermaid.render(diagramId, newSource.trim());
+
+    // Remove old SVG
+    const oldSvg = wrapper.querySelector('svg');
+    if (oldSvg) oldSvg.remove();
+    // Remove error state
+    const oldErr = wrapper.querySelector('.mermaid-error');
+    if (oldErr) oldErr.remove();
+
+    // Insert new SVG safely via DOMParser
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svg, 'image/svg+xml');
+    const svgEl = doc.documentElement;
+    if (svgEl && svgEl.tagName === 'svg') {
+      wrapper.insertBefore(document.adoptNode(svgEl), wrapper.firstChild);
+    }
+
+    wrapper.dataset.mermaidSource = newSource;
+    wrapper.classList.remove('mermaid-diagram--error');
+  } catch (err) {
+    // Show error state without crashing
+    wrapper.classList.add('mermaid-diagram--error');
+    let errEl = wrapper.querySelector('.mermaid-error');
+    if (!errEl) {
+      errEl = document.createElement('p');
+      errEl.className = 'mermaid-error';
+      wrapper.insertBefore(errEl, wrapper.firstChild);
+    }
+    errEl.textContent = 'Diagram error: ' + err.message;
+  }
+}

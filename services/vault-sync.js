@@ -8,6 +8,7 @@ const path = require('path');
 // chokidar v5 is ESM-only — lazy-load via dynamic import() in startWatcher()
 const { VAULT_DIR, isVaultEnabled, toRelativePath } = require('./vault-config');
 const { getPool } = require('./database');
+const { createPageVersion } = require('./pages');
 
 const SCHEMA = 'knowledge_base';
 const DEBOUNCE_MS = 500;
@@ -106,6 +107,7 @@ async function handleChange(relativePath, content) {
 
   if (result.rowCount > 0) {
     console.log(`Vault sync [change]: ${relativePath} → page ${result.rows[0].id}`);
+    await createPageVersion(pool, result.rows[0].id, content, 'External edit detected', 'vault');
   } else {
     // File exists but no page record — treat as new file
     await handleAdd(relativePath, content);

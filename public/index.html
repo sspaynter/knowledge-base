@@ -194,8 +194,46 @@
           <button class="btn btn--primary" id="editor-save">Save</button>
         </div>
       </div>
+      <!-- EDITOR TOOLBAR -->
+      <div class="editor-toolbar" role="toolbar" aria-label="Editor toolbar">
+        <div class="editor-toolbar__group">
+          <button class="toolbar-btn" data-action="bold" title="Bold" aria-label="Bold">
+            <i data-lucide="bold" aria-hidden="true"></i>
+          </button>
+          <button class="toolbar-btn" data-action="italic" title="Italic" aria-label="Italic">
+            <i data-lucide="italic" aria-hidden="true"></i>
+          </button>
+          <button class="toolbar-btn" data-action="heading" title="Heading" aria-label="Heading">
+            <i data-lucide="heading" aria-hidden="true"></i>
+          </button>
+          <button class="toolbar-btn" data-action="link" title="Link" aria-label="Link">
+            <i data-lucide="link" aria-hidden="true"></i>
+          </button>
+          <button class="toolbar-btn" data-action="code" title="Code block" aria-label="Code block">
+            <i data-lucide="code" aria-hidden="true"></i>
+          </button>
+          <button class="toolbar-btn" data-action="bullet-list" title="Bullet list" aria-label="Bullet list">
+            <i data-lucide="list" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="editor-toolbar__group">
+          <button class="toolbar-btn" id="insert-diagram-btn" data-action="diagram"
+                  title="Insert Diagram" aria-label="Insert Diagram" aria-haspopup="listbox">
+            <i data-lucide="git-branch" aria-hidden="true"></i>
+            <span class="toolbar-btn__label">Diagram</span>
+          </button>
+        </div>
+        <div class="editor-toolbar__spacer"></div>
+        <div class="editor-toolbar__group">
+          <button class="toolbar-btn toolbar-btn--toggle" id="editor-mode-btn"
+                  title="Toggle split view" aria-label="Toggle split/full view"
+                  aria-pressed="true">
+            <i data-lucide="columns-2" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
       <div class="editor-modal__body">
-        <div class="editor-split">
+        <div class="editor-split" id="editor-split">
           <textarea id="editor-textarea" class="editor-textarea"
                     placeholder="Write in Markdown…"
                     aria-label="Page content editor"
@@ -205,6 +243,12 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- DIAGRAM TEMPLATE PICKER -->
+  <div id="diagram-picker" class="diagram-picker" hidden
+       role="listbox" aria-label="Choose diagram template">
+    <!-- Populated by diagram-templates.js -->
   </div>
 
   <!-- TOAST CONTAINER -->

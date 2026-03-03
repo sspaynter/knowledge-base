@@ -32,13 +32,11 @@ router.get('/google/callback', oauthLimit, (req, res, next) => {
       console.error('[AUTH] Callback failed — no user. Info:', JSON.stringify(info));
       return res.redirect('/?error=auth_failed');
     }
-    console.log('[AUTH] Callback success — user:', user.id, user.email);
     req.logIn(user, (loginErr) => {
       if (loginErr) {
         console.error('[AUTH] Login (serialize) error:', loginErr.message, loginErr.stack);
         return res.redirect('/?error=auth_failed');
       }
-      console.log('[AUTH] Session created for user:', user.id);
       res.redirect('/');
     });
   })(req, res, next);
