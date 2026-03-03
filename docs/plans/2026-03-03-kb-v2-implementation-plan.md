@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-03
 **Design Spec:** `docs/plans/2026-03-02-knowledge-base-v2-design.md`
-**Status:** Phase 1 + Phase 2 + Phase 3 + Phase 4 COMPLETE — deployed to staging
+**Status:** Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 COMPLETE — deployed to staging
 
 ---
 
@@ -454,6 +454,43 @@ All 6 tasks completed. PWA manifest, service worker, search breadcrumb fix, diag
 - Workspace/section filter chips in search (not built — all/pages/assets chips sufficient for now; backend would need changes)
 - Search result excerpt highlighting (ts_headline output rendered as plain text — consistent with no-innerHTML policy; full highlighting deferred)
 - iOS app icon (requires PNG; SVG fallback in place — acceptable for v2.0)
+
+---
+
+### Phase 5 — COMPLETED (session 33, 2026-03-03)
+
+All 5 tasks completed. Migration script, inbox endpoint, asset browser, page status filtering, map diagram toggle.
+
+**Files created:**
+- `scripts/migrate-v2.js` — idempotent v1→v2 migration: links vault files to page records, exports DB-only pages to vault, refreshes search_vector. Reports totals per run.
+- `routes/inbox.js` — POST /api/inbox quick-capture endpoint (auto-title from timestamp, finds/creates personal/inbox section, writes vault file via createPage service)
+- `public/js/assets-browser.js` — asset browser view: asset grid with type+name filter, click-to-expand detail panel with linked pages
+
+**Files modified:**
+- `server.js` — added `/api/inbox` route
+- `services/assets.js` — added `getAssetLinkedPages(assetId)` query (pages linked via page_assets)
+- `routes/assets.js` — added `GET /:id/pages` endpoint using `getAssetLinkedPages`
+- `public/js/api.js` — added `getAssetLinkedPages(id)` and `captureInbox(body)` client methods
+- `public/index.html` — added `assets-btn` in topbar__right; added `status-filter-btn` elements (Drafts, Archived) in sidebar__footer
+- `public/js/store.js` — added `showDrafts: false` and `showArchived: false` flags
+- `public/js/app.js` — `renderPageTree()` applies status-based visibility (`data-status` attribute); new `applyStatusFilter()` helper; status filter button event listeners; asset browser button wired
+- `public/js/map.js` — added `map-mode-toggle` (Table / Diagram buttons); Diagram mode generates Mermaid flowchart via `renderDiagram()`; filter logic updated to serve both modes; sanitiseMermaidLabel() prevents injection in node labels
+- `public/css/styles.css` — asset browser/card/detail styles, sidebar status filter buttons, map mode toggle, page-item draft/archived visual modifiers
+
+**Key technical decisions:**
+- Migration script: `ON CONFLICT DO NOTHING` for idempotency; uses `extractTitle()` to get H1 from vault file as page title; skips files whose workspace/section slugs don't exist in DB
+- Inbox endpoint: workspace/section auto-created if not present; createPage handles vault write
+- Asset browser: grid layout (auto-fill 220px min) matches card design language; detail panel appears inline below grid (not a separate modal)
+- Status filtering: client-side (API already returns all non-deleted pages); `data-status` attribute on each page-item allows applyStatusFilter() to show/hide without re-fetching
+- Map diagram: Mermaid nodes use `a{id}` prefix to avoid numeric-only node ID issues; labels sanitised (quotes replaced, `<>` removed, 40-char limit); DOMParser SVG insertion (no innerHTML)
+- Asset linked pages: JOIN through page_assets → pages → sections → workspaces — returns workspace_name and section_name for breadcrumb display
+
+**Infrastructure:**
+- Committed to `dev` branch, GitHub Actions built `:dev`, Watchtower deployed to `kb-staging`
+
+**Deferred from Phase 5 spec:**
+- Workspace filter on asset browser (assets are linked to pages, not workspaces directly; requires multi-join — deferred to Phase 6 or beyond)
+- Map diagram: Copy SVG / Download PNG buttons not added to map diagram (it uses the same .mermaid-diagram class so the hover toolbar from mermaid-init.js may appear, but the Edit Source button would be a no-op; acceptable for v2.0)
 
 ---
 

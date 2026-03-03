@@ -55,7 +55,7 @@ Twelve interconnected problems drove this:
 
 ## Current state
 
-**Version:** v2.0.0-dev — Phases 1–4 complete on `dev` branch, staging at `kb-staging.ss-42.com`
+**Version:** v2.0.0-dev — Phases 1–5 complete on `dev` branch, staging at `kb-staging.ss-42.com`
 **Production:** v1.0.0 still live at `kb.ss-42.com` (pending Phase 6 production deploy)
 
 **v1.0.0 completed:**
@@ -76,7 +76,9 @@ Twelve interconnected problems drove this:
 
 *Phase 4 (session 32):* "42" logo removed from rail, replaced with `book-open` Lucide icon in topbar left (desktop only). PWA manifest (`/manifest.json`) + KB SVG icon (`/icons/kb-icon.svg`). Service worker (`/sw.js`): cache-first for static assets, network-first for API, offline fallback page. Search result breadcrumb fix (workspace › section now shown for page results). Diagram toolbar wired: Copy SVG (clipboard), Download PNG (2× canvas). Dark/light mode: `prefers-color-scheme` used for initial theme when no saved preference; Mermaid diagrams re-render with correct theme on toggle via `reinitMermaid()`. Rail refactored to two-tier: CORE_APPS (Knowledge Base active + To Do) above divider, BUILT_APPS (Applyr) below. "Lifeboard" renamed to "To Do" throughout. Projects placeholder removed.
 
-*Phases 5–6:* PENDING — see implementation plan for details.
+*Phase 5 (session 33):* Migration script (`scripts/migrate-v2.js` — idempotent vault sync, DB export, search_vector refresh). Inbox endpoint (`POST /api/inbox` — auto-title, finds/creates personal/inbox section). Asset browser view (asset grid with type filter, detail panel with linked pages). Page status filtering in sidebar (Drafts and Archived toggles, client-side visibility). Map view Mermaid diagram toggle (Table/Diagram mode, generates flowchart from relationship data via Mermaid.js).
+
+*Phase 6:* PENDING — see implementation plan for details.
 
 **v2.0.0 design goals:**
 - Vault-as-source architecture — markdown files are source of truth, DB for metadata/search/relationships
