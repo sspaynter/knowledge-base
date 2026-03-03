@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-03
 **Design Spec:** `docs/plans/2026-03-02-knowledge-base-v2-design.md`
-**Status:** Phase 1 + Phase 2 COMPLETE — deployed to staging
+**Status:** Phase 1 + Phase 2 + Phase 3 COMPLETE — deployed to staging
 
 ---
 
@@ -388,6 +388,32 @@ Phase 1 is the architecture proof: vault sync running, pages served from vault f
   - WHEN a page is saved via the editor THEN an `asset_versions` row is created
   - WHEN a page is synced from external edit THEN a version is created with "External edit detected"
   - AND no page has more than 50 version rows
+
+---
+
+### Phase 3 — COMPLETED (session 31, 2026-03-03)
+
+All 6 tasks completed. App rail repurposed as SS42 suite switcher. Workspace strip added. Three-breakpoint responsive layout. Sidebar becomes slide-out drawer on tablet/mobile.
+
+**Files modified:**
+- `public/index.html` — rail restructured (42 logo + app icons), workspace strip added, sidebar workspace select added, drawer backdrop added, hamburger button in topbar, page title span in topbar
+- `public/css/styles.css` — `--workspace-strip-w: 152px` token, rail__hq-link styles, workspace strip component, drawer backdrop, nav-toggle-btn, topbar mobile styles, three breakpoint media queries
+- `public/js/app.js` — `renderAppRail()` (static 4-icon app switcher), `renderWorkspaceStrip()` (dynamic workspaces), `populateWorkspaceSelect()` (tablet/mobile dropdown), `openSidebar()` / `closeSidebar()` (drawer), `bindDrawer()`, `bindWorkspaceStrip()` (collapse + select change), `selectPage()` updated (closes drawer, sets topbar title), `store.currentSection` now set when user expands a section
+
+**Key technical decisions:**
+- Sidebar IS the drawer on mobile (CSS transform repositions it to fixed) — no duplicate DOM
+- Workspace strip collapses to 48px icon-only mode, state persisted in localStorage
+- Rail app switcher is fully static (4 hardcoded icons) — no API needed
+- App icon URLs: KB = current app (`null`), Applyr = `https://jobs.ss-42.com`, Lifeboard = `https://todo.ss-42.com`, Projects = `#` (placeholder)
+- "42" logo moved from topbar into rail top — **DESIGN NOTE: Simon flagged this for review next session. He does not like the 42 in the rail and does not understand what it does. Consider: hide it, move it back to topbar, or replace with KB initials.**
+
+**Infrastructure:**
+- Committed to `dev` branch, GitHub Actions built `:dev`, Watchtower deployed to `kb-staging`
+- Health check verified: `https://kb-staging.ss-42.com/api/health` → `{"status":"ok"}`
+
+**Remaining deferred items from Phase 3 spec:**
+- Editor single-view toggle on mobile (CSS scaffolding is in place, mode toggle button not yet wired for mobile)
+- HQ launcher overlay for "42" logo (deferred, links to `#` currently)
 
 ---
 

@@ -55,7 +55,7 @@ Twelve interconnected problems drove this:
 
 ## Current state
 
-**Version:** v2.0.0-dev — Phase 1 (vault sync + visual redesign) and Phase 2 (editor + write paths) complete on `dev` branch, staging at `kb-staging.ss-42.com`
+**Version:** v2.0.0-dev — Phases 1–3 complete on `dev` branch, staging at `kb-staging.ss-42.com`
 **Production:** v1.0.0 still live at `kb.ss-42.com` (pending Phase 6 production deploy)
 
 **v1.0.0 completed:**
@@ -72,7 +72,9 @@ Twelve interconnected problems drove this:
 
 *Phase 2 (session 30):* Vault-first write paths (createPage/updatePage/movePage write .md files), page_versions table (50-version history, restore endpoint), editor toolbar (bold/italic/heading/link/code/list), split/source-only mode toggle, Mermaid live preview in editor pane, 7 diagram templates with Insert Diagram picker, click-to-edit Mermaid in reading view (inline editor panel, live preview, writes back to page content). Google OAuth SSO cross-app verified: sign into KB → Applyr authenticated (shared `.ss-42.com` cookie).
 
-*Phases 3–6:* PENDING — see implementation plan for details.
+*Phase 3 (session 31):* App rail (static SS42 switcher: KB, Applyr, Lifeboard, Projects), workspace navigation strip (collapsible, 152px), three-breakpoint responsive CSS (desktop 1024px+, tablet 768–1023px, mobile <768px), sidebar becomes slide-out drawer on mobile with backdrop, hamburger button, workspace dropdown on tablet, topbar page title on mobile, workspace strip collapse persisted to localStorage.
+
+*Phases 4–6:* PENDING — see implementation plan for details.
 
 **v2.0.0 design goals:**
 - Vault-as-source architecture — markdown files are source of truth, DB for metadata/search/relationships
