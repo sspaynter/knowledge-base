@@ -106,6 +106,7 @@ app.use('/api/assets',        require('./routes/assets'));
 app.use('/api/relationships', require('./routes/relationships'));
 app.use('/api/search',        require('./routes/search'));
 app.use('/api/sync',          require('./routes/sync'));
+app.use('/api/inbox',         require('./routes/inbox'));
 app.use('/api/upload',        require('./routes/upload'));
 
 // ── Admin routes ───────────────────────────────────────────

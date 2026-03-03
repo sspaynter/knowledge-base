@@ -53,4 +53,12 @@ router.post('/:id/link', requireRole('editor'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/assets/:id/pages — pages that reference this asset
+router.get('/:id/pages', async (req, res, next) => {
+  try {
+    const pages = await assets.getAssetLinkedPages(req.params.id);
+    res.json(pages);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

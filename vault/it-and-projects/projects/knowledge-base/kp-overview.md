@@ -42,7 +42,7 @@ Twelve interconnected problems drove this:
 
 ## What it is not
 
-- Not a task manager — that is Lifeboard
+- Not a task manager — that is To Do
 - Not a code repository — that is GitHub
 - Not a flat record browser (the old v0.1 model)
 - Not a replacement for specialised creative tools
@@ -55,7 +55,7 @@ Twelve interconnected problems drove this:
 
 ## Current state
 
-**Version:** v2.0.0-dev — Phases 1–3 complete on `dev` branch, staging at `kb-staging.ss-42.com`
+**Version:** v2.0.0-dev — Phases 1–4 complete on `dev` branch, staging at `kb-staging.ss-42.com`
 **Production:** v1.0.0 still live at `kb.ss-42.com` (pending Phase 6 production deploy)
 
 **v1.0.0 completed:**
@@ -72,9 +72,11 @@ Twelve interconnected problems drove this:
 
 *Phase 2 (session 30):* Vault-first write paths (createPage/updatePage/movePage write .md files), page_versions table (50-version history, restore endpoint), editor toolbar (bold/italic/heading/link/code/list), split/source-only mode toggle, Mermaid live preview in editor pane, 7 diagram templates with Insert Diagram picker, click-to-edit Mermaid in reading view (inline editor panel, live preview, writes back to page content). Google OAuth SSO cross-app verified: sign into KB → Applyr authenticated (shared `.ss-42.com` cookie).
 
-*Phase 3 (session 31):* App rail (static SS42 switcher: KB, Applyr, Lifeboard, Projects), workspace navigation strip (collapsible, 152px), three-breakpoint responsive CSS (desktop 1024px+, tablet 768–1023px, mobile <768px), sidebar becomes slide-out drawer on mobile with backdrop, hamburger button, workspace dropdown on tablet, topbar page title on mobile, workspace strip collapse persisted to localStorage.
+*Phase 3 (session 31):* App rail (static SS42 switcher), workspace navigation strip (collapsible, 152px), three-breakpoint responsive CSS (desktop 1024px+, tablet 768–1023px, mobile <768px), sidebar becomes slide-out drawer on mobile with backdrop, hamburger button, workspace dropdown on tablet, topbar page title on mobile, workspace strip collapse persisted to localStorage. Rail later refactored to two-tier (see Phase 4).
 
-*Phases 4–6:* PENDING — see implementation plan for details.
+*Phase 4 (session 32):* "42" logo removed from rail, replaced with `book-open` Lucide icon in topbar left (desktop only). PWA manifest (`/manifest.json`) + KB SVG icon (`/icons/kb-icon.svg`). Service worker (`/sw.js`): cache-first for static assets, network-first for API, offline fallback page. Search result breadcrumb fix (workspace › section now shown for page results). Diagram toolbar wired: Copy SVG (clipboard), Download PNG (2× canvas). Dark/light mode: `prefers-color-scheme` used for initial theme when no saved preference; Mermaid diagrams re-render with correct theme on toggle via `reinitMermaid()`. Rail refactored to two-tier: CORE_APPS (Knowledge Base active + To Do) above divider, BUILT_APPS (Applyr) below. "Lifeboard" renamed to "To Do" throughout. Projects placeholder removed.
+
+*Phases 5–6:* PENDING — see implementation plan for details.
 
 **v2.0.0 design goals:**
 - Vault-as-source architecture — markdown files are source of truth, DB for metadata/search/relationships
@@ -102,7 +104,7 @@ Twelve interconnected problems drove this:
 
 | Project | Role |
 |---|---|
-| Lifeboard | Task and project tracking — will write project data into this platform |
+| To Do | Task and project tracking — will write project data into this platform |
 | GitHub | Code and issue management — logs and decisions will surface here |
 | Mobile capture tools | Quick input on the go — push content via API |
 | Claude / AI sessions | Query this platform for context, write documentation back into it |

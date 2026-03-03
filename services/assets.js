@@ -89,4 +89,17 @@ async function linkAssetToPage(pageId, assetId, { display_mode, sort_order } = {
   return res.rows[0];
 }
 
-module.exports = { listAssets, getAsset, createAsset, updateAsset, deleteAsset, linkAssetToPage };
+async function getAssetLinkedPages(assetId) {
+  const res = await getPool().query(`
+    SELECT p.id, p.title, p.status, s.name AS section_name, w.name AS workspace_name
+    FROM knowledge_base.page_assets pa
+    JOIN knowledge_base.pages p ON p.id = pa.page_id
+    JOIN knowledge_base.sections s ON s.id = p.section_id
+    JOIN knowledge_base.workspaces w ON w.id = s.workspace_id
+    WHERE pa.asset_id = $1 AND p.deleted_at IS NULL
+    ORDER BY w.name, s.name, p.title
+  `, [assetId]);
+  return res.rows;
+}
+
+module.exports = { listAssets, getAsset, createAsset, updateAsset, deleteAsset, linkAssetToPage, getAssetLinkedPages };

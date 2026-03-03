@@ -269,14 +269,24 @@ function renderPageTree(pages, container, parentId = null, depth = 0) {
   pages
     .filter(p => (p.parent_id ?? null) === parentId)
     .forEach(page => {
+      const status     = page.status || 'published';
+      const isArchived = status === 'archived';
+      const isDraft    = status === 'draft';
+      const isHidden   = (isArchived && !store.showArchived) || (isDraft && !store.showDrafts);
+
       const li   = document.createElement('li');
       const item = document.createElement('div');
-      item.className  = 'page-item' + (store.currentPage?.id === page.id ? ' page-item--active' : '');
-      item.dataset.id    = page.id;
-      item.dataset.depth = depth;
+      item.className  = 'page-item'
+        + (store.currentPage?.id === page.id ? ' page-item--active' : '')
+        + (isDraft    ? ' page-item--draft'    : '')
+        + (isArchived ? ' page-item--archived' : '');
+      item.dataset.id     = page.id;
+      item.dataset.depth  = depth;
+      item.dataset.status = status;
+      if (isHidden) item.hidden = true;
 
       const icon = document.createElement('i');
-      icon.setAttribute('data-lucide', 'file-text');
+      icon.setAttribute('data-lucide', isArchived ? 'archive' : isDraft ? 'file-pen' : 'file-text');
       icon.setAttribute('aria-hidden', 'true');
 
       const title = document.createElement('span');
@@ -292,6 +302,16 @@ function renderPageTree(pages, container, parentId = null, depth = 0) {
     });
 
   window.lucide.createIcons();
+}
+
+/** Re-apply status filter visibility to all currently-rendered page items. */
+function applyStatusFilter() {
+  document.querySelectorAll('.page-item[data-status]').forEach(el => {
+    const status     = el.dataset.status;
+    const isArchived = status === 'archived';
+    const isDraft    = status === 'draft';
+    el.hidden = (isArchived && !store.showArchived) || (isDraft && !store.showDrafts);
+  });
 }
 
 export async function selectPage(page) {
@@ -401,6 +421,26 @@ function bindTopBar() {
   document.getElementById('map-btn')?.addEventListener('click', async () => {
     const { renderMapView } = await import('./map.js');
     renderMapView();
+  });
+
+  // Asset browser
+  document.getElementById('assets-btn')?.addEventListener('click', async () => {
+    const { renderAssetBrowser } = await import('./assets-browser.js');
+    renderAssetBrowser();
+  });
+
+  // Status filter toggles
+  document.getElementById('filter-drafts-btn')?.addEventListener('click', (e) => {
+    store.showDrafts = !store.showDrafts;
+    e.currentTarget.setAttribute('aria-pressed', String(store.showDrafts));
+    e.currentTarget.classList.toggle('status-filter-btn--active', store.showDrafts);
+    applyStatusFilter();
+  });
+  document.getElementById('filter-archived-btn')?.addEventListener('click', (e) => {
+    store.showArchived = !store.showArchived;
+    e.currentTarget.setAttribute('aria-pressed', String(store.showArchived));
+    e.currentTarget.classList.toggle('status-filter-btn--active', store.showArchived);
+    applyStatusFilter();
   });
 
   // Search

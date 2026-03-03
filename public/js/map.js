@@ -1,5 +1,5 @@
-// map.js — Asset relationship map view (v1: filterable table).
-// All content rendered via textContent — no untrusted HTML from API.
+// map.js — Asset relationship map view. Two modes: filterable table + Mermaid diagram.
+// All content rendered via textContent / DOM APIs — no innerHTML from untrusted data.
 
 import * as api from './api.js';
 import { toastError } from './toast.js';
@@ -65,6 +65,15 @@ function buildMapView(relationships) {
   header.appendChild(count);
   container.appendChild(header);
 
+  // Table / Diagram toggle
+  const modeToggle = document.createElement('div');
+  modeToggle.className = 'map-mode-toggle';
+  const tableBtn   = makeModeBtn('table-2',  'Table',   true);
+  const diagramBtn = makeModeBtn('git-branch', 'Diagram', false);
+  modeToggle.appendChild(tableBtn);
+  modeToggle.appendChild(diagramBtn);
+  container.appendChild(modeToggle);
+
   // Filter bar
   const filters = document.createElement('div');
   filters.className = 'map-filters';
@@ -74,29 +83,153 @@ function buildMapView(relationships) {
   filters.appendChild(nameInput);
   container.appendChild(filters);
 
-  // Table
-  const wrap = document.createElement('div');
-  wrap.style.overflowX = 'auto';
+  // Table view
+  const tableWrap = document.createElement('div');
+  tableWrap.style.overflowX = 'auto';
   const table = buildTable(relationships);
-  wrap.appendChild(table);
-  container.appendChild(wrap);
+  tableWrap.appendChild(table);
+  container.appendChild(tableWrap);
 
-  // Filter logic
-  function applyFilters() {
+  // Diagram view (lazy-rendered)
+  const diagramWrap = document.createElement('div');
+  diagramWrap.className = 'map-diagram-wrap';
+  diagramWrap.hidden = true;
+  container.appendChild(diagramWrap);
+
+  // Filter logic (applies to table rows and affects diagram data)
+  function getFilteredRels() {
     const type  = typeSelect.value === 'All types' ? '' : typeSelect.value;
     const asset = nameInput.value.toLowerCase();
+    return relationships.filter(rel => {
+      const matchType  = !type  || rel.relationship_type === type;
+      const matchAsset = !asset
+        || (rel.from_title || '').toLowerCase().includes(asset)
+        || (rel.to_title   || '').toLowerCase().includes(asset);
+      return matchType && matchAsset;
+    });
+  }
+
+  function applyFilters() {
+    const filtered = getFilteredRels();
+    // Update table visibility
     table.querySelectorAll('tbody tr').forEach(tr => {
-      const matchType  = !type  || tr.dataset.relType === type;
+      const matchType  = !typeSelect.value || typeSelect.value === 'All types' || tr.dataset.relType === typeSelect.value;
+      const asset = nameInput.value.toLowerCase();
       const matchAsset = !asset || tr.dataset.from.toLowerCase().includes(asset)
                                  || tr.dataset.to.toLowerCase().includes(asset);
       tr.hidden = !(matchType && matchAsset);
     });
+    // Refresh diagram if visible
+    if (!diagramWrap.hidden) renderDiagram(filtered, diagramWrap);
   }
 
   typeSelect.addEventListener('change', applyFilters);
   nameInput.addEventListener('input',  applyFilters);
 
+  // Mode toggle logic
+  tableBtn.addEventListener('click', () => {
+    tableBtn.classList.add('map-mode-btn--active');
+    diagramBtn.classList.remove('map-mode-btn--active');
+    tableWrap.hidden   = false;
+    diagramWrap.hidden = true;
+  });
+  diagramBtn.addEventListener('click', async () => {
+    diagramBtn.classList.add('map-mode-btn--active');
+    tableBtn.classList.remove('map-mode-btn--active');
+    tableWrap.hidden   = true;
+    diagramWrap.hidden = false;
+    renderDiagram(getFilteredRels(), diagramWrap);
+  });
+
   return container;
+}
+
+function makeModeBtn(icon, label, active) {
+  const btn = document.createElement('button');
+  btn.className = 'map-mode-btn' + (active ? ' map-mode-btn--active' : '');
+  const i = document.createElement('i');
+  i.setAttribute('data-lucide', icon);
+  i.setAttribute('aria-hidden', 'true');
+  const span = document.createElement('span');
+  span.textContent = label;
+  btn.appendChild(i);
+  btn.appendChild(span);
+  return btn;
+}
+
+/** Generate a Mermaid flowchart from filtered relationships and render it. */
+async function renderDiagram(relationships, container) {
+  container.textContent = '';
+
+  if (relationships.length === 0) {
+    const msg = document.createElement('p');
+    msg.style.cssText = 'color:var(--text-3);text-align:center;padding:32px;font-size:13px;';
+    msg.textContent = 'No relationships to display. Adjust the filter to see the diagram.';
+    container.appendChild(msg);
+    return;
+  }
+
+  // Build node set (deduplicated by id)
+  const nodes = new Map();
+  const edges = [];
+
+  relationships.forEach(rel => {
+    const fromId  = `a${rel.from_asset_id}`;
+    const toId    = `a${rel.to_asset_id}`;
+    const fromLbl = sanitiseMermaidLabel(rel.from_title || fromId);
+    const toLbl   = sanitiseMermaidLabel(rel.to_title   || toId);
+
+    nodes.set(fromId, fromLbl);
+    nodes.set(toId,   toLbl);
+    edges.push({ from: fromId, to: toId, label: rel.relationship_type || '' });
+  });
+
+  // Build Mermaid syntax
+  let mermaid = 'flowchart LR\n';
+  for (const [id, label] of nodes) {
+    mermaid += `  ${id}["${label}"]\n`;
+  }
+  for (const edge of edges) {
+    const edgeLabel = edge.label ? `|${edge.label}|` : '';
+    mermaid += `  ${edge.from} -->${edgeLabel} ${edge.to}\n`;
+  }
+
+  // Render using Mermaid library
+  if (!window.mermaid) {
+    const msg = document.createElement('p');
+    msg.style.cssText = 'color:var(--text-3);padding:24px;font-size:13px;';
+    msg.textContent = 'Mermaid library not loaded — refresh and try again.';
+    container.appendChild(msg);
+    return;
+  }
+
+  try {
+    const diagramId = `map-diagram-${Date.now()}`;
+    const { svg } = await window.mermaid.render(diagramId, mermaid);
+
+    // Parse SVG safely via DOMParser
+    const parser = new DOMParser();
+    const doc    = parser.parseFromString(svg, 'image/svg+xml');
+    const svgEl  = doc.documentElement;
+    if (svgEl && svgEl.tagName === 'svg') {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mermaid-diagram';
+      wrapper.style.margin = '24px auto';
+      wrapper.appendChild(document.adoptNode(svgEl));
+      container.appendChild(wrapper);
+      window.lucide.createIcons();
+    }
+  } catch (err) {
+    const errEl = document.createElement('p');
+    errEl.style.cssText = 'color:var(--danger);padding:24px;font-size:13px;';
+    errEl.textContent = 'Diagram error: ' + err.message;
+    container.appendChild(errEl);
+  }
+}
+
+/** Sanitise a label string for use inside Mermaid quoted node labels. */
+function sanitiseMermaidLabel(str) {
+  return String(str).replace(/"/g, "'").replace(/[<>]/g, '').slice(0, 40);
 }
 
 function buildTable(relationships) {

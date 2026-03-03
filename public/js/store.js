@@ -14,6 +14,8 @@ export const store = {
   searchQuery:      '',
   searchResults:    [],
   searchFilter:     'all', // 'all' | 'pages' | 'assets'
+  showDrafts:       false, // show draft pages in sidebar
+  showArchived:     false, // show archived pages in sidebar
 };
 
 // Restore persisted sidebar state

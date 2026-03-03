@@ -102,6 +102,12 @@ export const deleteRelationship = (id)   => request('DELETE', `/api/relationship
 export const listAssetRelationships = (id) =>
   listRelationships({ from_asset_id: id });
 
+// Get pages that reference a given asset
+export const getAssetLinkedPages = (id) => request('GET', `/api/assets/${id}/pages`);
+
+// Inbox — quick-capture
+export const captureInbox = (body) => request('POST', '/api/inbox', body);
+
 // Admin
 export const listUsers   = ()         => request('GET',    '/api/admin/users');
 export const updateUser  = (id, body) => request('PATCH',  `/api/admin/users/${id}`, body);
