@@ -17,6 +17,18 @@ const DEBOUNCE_MS = 500;
 // Debounce timers per file path
 const timers = new Map();
 
+// Suppressed paths — prevents chokidar from re-processing files the API just wrote
+const suppressedPaths = new Set();
+
+/**
+ * Suppress a vault-relative path so chokidar ignores the next change event.
+ * TTL auto-clears after the specified duration (default 2s = 2× chokidar pipeline).
+ */
+function suppressPath(relativePath, ttlMs = 2000) {
+  suppressedPaths.add(relativePath);
+  setTimeout(() => suppressedPaths.delete(relativePath), ttlMs);
+}
+
 /**
  * Start the chokidar file watcher on VAULT_DIR.
  * Returns a promise that resolves to the watcher instance (for testing/cleanup).
@@ -65,6 +77,13 @@ async function startWatcher() {
 // ── Debounce ────────────────────────────────────────────────
 function debouncedSync(type, absPath) {
   const relativePath = toRelativePath(absPath);
+
+  // Skip if this path was recently written by the API (prevents double-processing)
+  if (suppressedPaths.has(relativePath)) {
+    console.log(`Vault sync [suppressed]: ${relativePath} — written by API, skipping`);
+    return;
+  }
+
   if (timers.has(relativePath)) {
     clearTimeout(timers.get(relativePath));
   }
@@ -393,6 +412,7 @@ function slugify(str) {
 module.exports = {
   startWatcher, syncFile,
   handleAdd, handleChange, handleUnlink,
-  inferLocationFromPath, slugify, titleFromFilename,
+  inferLocationFromPath, findOrCreateSection, slugify, titleFromFilename,
+  suppressPath, suppressedPaths,
   parseFrontmatter, serializeFrontmatter, mapFrontmatterToColumns,
 };
