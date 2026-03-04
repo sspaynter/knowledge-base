@@ -130,17 +130,18 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | POST /api/sync | Live | Trigger sync for specific vault file |
 | Initial vault sync script | Live | scripts/initial-vault-sync.js — one-time, 17 files synced |
 | v1→v2 migration script | Live | scripts/migrate-v2.js — idempotent: vault→DB, DB→vault, search_vector refresh |
-| Frontmatter metadata parsing | Planned | TODO #35 — parse YAML frontmatter (status, order, parent, tags, title, author, dates) and map to DB columns. Round-trip: editor preserves frontmatter on save. |
-| sort_order from frontmatter | Planned | TODO #36 — vault sync reads `order` from frontmatter; falls back to MAX(sort_order) + 10. Gapped numbering (10, 20, 30...) for future drag-to-reorder (#13). |
+| Frontmatter metadata parsing | Live | #35 — js-yaml parses `---` delimited YAML; maps status/order/parent/author/title/created/updated to DB columns; strips frontmatter from content_cache; round-trip: writeVaultFile prepends frontmatter on save |
+| sort_order from frontmatter | Live | #36 — vault sync reads `order` from frontmatter; falls back to MAX(sort_order) + 10; gapped numbering (10, 20, 30...) for future drag-to-reorder (#13) |
 
 ### Page ordering
 
 | Feature | Status | Notes |
 |---|---|---|
-| SQL ORDER BY sort_order | Live | All queries order by sort_order, then name/title — already correct |
-| Frontend respects API order | Live | No client-side re-sorting — already correct |
-| Seed data sort_order values | Live | 9 workspaces and 14 sections have explicit values |
-| Vault sync sets sort_order | Planned | TODO #36 — currently missing from INSERT; items get NULL/0 |
+| SQL ORDER BY sort_order | Live | All queries order by sort_order, then name/title |
+| Frontend respects API order | Live | No client-side re-sorting |
+| Seed data sort_order values | Live | 9 workspaces (10-90) and 14 sections (10-40 per workspace) — gapped numbering |
+| Vault sync sets sort_order | Live | #36 — reads from frontmatter `order` field; falls back to MAX + 10 |
+| Workspace/section auto-create sort_order | Live | #36 — new workspaces and sections get MAX(sort_order) + 10 |
 | Drag-to-reorder | Planned | TODO #13 (P3) — depends on #36 gapped numbering and #35 frontmatter round-trip |
 
 ### Dark / light mode
@@ -207,6 +208,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | 37 | 6.7 | Production deploy: Dockerfile healthcheck fix (IPv6), CI migration runner fix, container recreated with vault mount, DB cleaned, v2.0.0 tagged and released |
 | 38 | — | Security audit: `/uploads` unauthenticated static route identified, security checklist updated, remediation doc created, TODO #33 added |
 | 39 | — | Skill asset registration: 50 assets (20 global skills, 5 agents, 14 superpowers, 9 job-app skills, 2 job-app agents) + 34 relationships registered via `scripts/register-skills.js`. Map view populated. TODO #32 completed. |
+| 40 | #35 + #36 | Frontmatter metadata parsing (js-yaml, 7 field mappings, round-trip writes) + gapped sort_order (seed 10/20/30, vault sync MAX+10, archived status migration). 27 new tests (22 unit + 5 integration). New file: `services/frontmatter.js`. |
 
 ---
 
