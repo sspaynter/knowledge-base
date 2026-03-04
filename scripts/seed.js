@@ -20,22 +20,22 @@ async function seed() {
 
     // ── Workspaces ─────────────────────────────────────────
     const workspaces = [
-      { name: 'Inbox',      slug: 'inbox',      icon: 'inbox',       sort_order: 0 },
-      { name: 'Operations', slug: 'operations', icon: 'monitor',     sort_order: 1 },
-      { name: 'Products',   slug: 'products',   icon: 'layout-grid', sort_order: 2 },
-      { name: 'Projects',   slug: 'projects',   icon: 'folder',      sort_order: 3 },
-      { name: 'Studio',     slug: 'studio',     icon: 'sparkles',    sort_order: 4 },
-      { name: 'Work',       slug: 'work',       icon: 'briefcase',   sort_order: 5 },
-      { name: 'Personal',   slug: 'personal',   icon: 'user',        sort_order: 6 },
-      { name: 'Learning',   slug: 'learning',   icon: 'book-open',   sort_order: 7 },
-      { name: 'Archive',    slug: 'archive',    icon: 'archive',     sort_order: 8 },
+      { name: 'Inbox',      slug: 'inbox',      icon: 'inbox',       sort_order: 10 },
+      { name: 'Operations', slug: 'operations', icon: 'monitor',     sort_order: 20 },
+      { name: 'Products',   slug: 'products',   icon: 'layout-grid', sort_order: 30 },
+      { name: 'Projects',   slug: 'projects',   icon: 'folder',      sort_order: 40 },
+      { name: 'Studio',     slug: 'studio',     icon: 'sparkles',    sort_order: 50 },
+      { name: 'Work',       slug: 'work',       icon: 'briefcase',   sort_order: 60 },
+      { name: 'Personal',   slug: 'personal',   icon: 'user',        sort_order: 70 },
+      { name: 'Learning',   slug: 'learning',   icon: 'book-open',   sort_order: 80 },
+      { name: 'Archive',    slug: 'archive',    icon: 'archive',     sort_order: 90 },
     ];
 
     for (const ws of workspaces) {
       await client.query(`
         INSERT INTO knowledge_base.workspaces (name, slug, icon, sort_order)
         VALUES ($1, $2, $3, $4)
-        ON CONFLICT (slug) DO NOTHING
+        ON CONFLICT (slug) DO UPDATE SET sort_order = EXCLUDED.sort_order
       `, [ws.name, ws.slug, ws.icon, ws.sort_order]);
     }
     console.log('✓ Workspaces seeded');
@@ -44,24 +44,24 @@ async function seed() {
     // Key sections seeded here; vault-sync auto-creates additional sections from file paths.
     const sections = [
       // Operations
-      { workspace: 'operations', name: 'AI Operating Model',   slug: 'ai-operating-model',  icon: 'bot',       sort_order: 0 },
-      { workspace: 'operations', name: 'Infrastructure',       slug: 'infrastructure',       icon: 'server',    sort_order: 1 },
-      { workspace: 'operations', name: 'Engineering Practice', slug: 'engineering-practice', icon: 'code',      sort_order: 2 },
-      { workspace: 'operations', name: 'Automation',           slug: 'automation',           icon: 'zap',       sort_order: 3 },
+      { workspace: 'operations', name: 'AI Operating Model',   slug: 'ai-operating-model',  icon: 'bot',       sort_order: 10 },
+      { workspace: 'operations', name: 'Infrastructure',       slug: 'infrastructure',       icon: 'server',    sort_order: 20 },
+      { workspace: 'operations', name: 'Engineering Practice', slug: 'engineering-practice', icon: 'code',      sort_order: 30 },
+      { workspace: 'operations', name: 'Automation',           slug: 'automation',           icon: 'zap',       sort_order: 40 },
       // Products
-      { workspace: 'products',   name: 'Knowledge Base',       slug: 'knowledge-base',       icon: 'database',  sort_order: 0 },
-      { workspace: 'products',   name: 'Applyr',               slug: 'applyr',               icon: 'briefcase', sort_order: 1 },
-      { workspace: 'products',   name: 'ToDo',                 slug: 'todo',                 icon: 'check',     sort_order: 2 },
-      { workspace: 'products',   name: 'n8n',                  slug: 'n8n',                  icon: 'workflow',  sort_order: 3 },
+      { workspace: 'products',   name: 'Knowledge Base',       slug: 'knowledge-base',       icon: 'database',  sort_order: 10 },
+      { workspace: 'products',   name: 'Applyr',               slug: 'applyr',               icon: 'briefcase', sort_order: 20 },
+      { workspace: 'products',   name: 'ToDo',                 slug: 'todo',                 icon: 'check',     sort_order: 30 },
+      { workspace: 'products',   name: 'n8n',                  slug: 'n8n',                  icon: 'workflow',  sort_order: 40 },
       // Projects
-      { workspace: 'projects',   name: 'Clients',              slug: 'clients',              icon: 'users',     sort_order: 0 },
+      { workspace: 'projects',   name: 'Clients',              slug: 'clients',              icon: 'users',     sort_order: 10 },
       // Personal
-      { workspace: 'personal',   name: 'Job Search',           slug: 'job-search',           icon: 'search',    sort_order: 0 },
-      { workspace: 'personal',   name: 'General',              slug: 'general',              icon: 'notebook',  sort_order: 1 },
+      { workspace: 'personal',   name: 'Job Search',           slug: 'job-search',           icon: 'search',    sort_order: 10 },
+      { workspace: 'personal',   name: 'General',              slug: 'general',              icon: 'notebook',  sort_order: 20 },
       // Learning
-      { workspace: 'learning',   name: 'AI',                   slug: 'ai',                   icon: 'bot',       sort_order: 0 },
-      { workspace: 'learning',   name: 'Product',              slug: 'product',              icon: 'package',   sort_order: 1 },
-      { workspace: 'learning',   name: 'IT',                   slug: 'it',                   icon: 'server',    sort_order: 2 },
+      { workspace: 'learning',   name: 'AI',                   slug: 'ai',                   icon: 'bot',       sort_order: 10 },
+      { workspace: 'learning',   name: 'Product',              slug: 'product',              icon: 'package',   sort_order: 20 },
+      { workspace: 'learning',   name: 'IT',                   slug: 'it',                   icon: 'server',    sort_order: 30 },
     ];
 
     for (const sec of sections) {
@@ -72,7 +72,7 @@ async function seed() {
       await client.query(`
         INSERT INTO knowledge_base.sections (workspace_id, name, slug, icon, sort_order)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (workspace_id, slug) DO NOTHING
+        ON CONFLICT (workspace_id, slug) DO UPDATE SET sort_order = EXCLUDED.sort_order
       `, [ws.rows[0].id, sec.name, sec.slug, sec.icon, sec.sort_order]);
     }
     console.log('✓ Sections seeded');

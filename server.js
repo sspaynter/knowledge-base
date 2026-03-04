@@ -88,6 +88,12 @@ app.use('/uploads', express.static(UPLOAD_DIR));
 // ── Auth routes (OAuth + session check + logout) ──────────
 app.use('/auth', require('./routes/auth'));
 
+// ── Version (public, no auth) ─────────────────────────────
+const { version } = require('./package.json');
+app.get('/api/version', (_req, res) => {
+  res.json({ version });
+});
+
 // ── Health check (public, no auth) ────────────────────────
 app.get('/api/health', async (req, res) => {
   try {

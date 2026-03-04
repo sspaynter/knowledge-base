@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { getPool } = require('./database');
 const { isVaultEnabled, resolveVaultPath, VAULT_DIR } = require('./vault-config');
+const { serializeFrontmatter } = require('./frontmatter');
 
 const SCHEMA = 'knowledge_base';
 
@@ -87,15 +88,17 @@ async function getPageByPath(filePath) {
 }
 
 // ── Three-layer content fallback ──────────────────────────
-// 1. Vault file (if file_path set and vault enabled)
-// 2. content_cache (synced copy in DB)
+// 1. Vault file (if file_path set and vault enabled) — strip frontmatter
+// 2. content_cache (synced copy in DB) — already stripped at sync time
 // 3. content column (pre-migration pages)
 function resolveContent(page) {
   if (page.file_path && isVaultEnabled()) {
     try {
       const absPath = resolveVaultPath(page.file_path);
       if (fs.existsSync(absPath)) {
-        return fs.readFileSync(absPath, 'utf8');
+        const raw = fs.readFileSync(absPath, 'utf8');
+        const { parseFrontmatter: parse } = require('./frontmatter');
+        return parse(raw).content;
       }
     } catch {
       // Fall through to content_cache
@@ -119,7 +122,8 @@ async function createPage({ section_id, parent_id, title, slug, content, templat
   let filePath = null;
   if (isVaultEnabled() && section_id) {
     filePath = await generateFilePath(pool, section_id, title || 'untitled', slug);
-    writeVaultFile(filePath, pageContent);
+    const vaultMeta = buildVaultMetadata({ status, created_by, sort_order, title });
+    writeVaultFile(filePath, pageContent, vaultMeta);
   }
 
   const res = await pool.query(`
@@ -177,7 +181,15 @@ async function updatePage(id, updates) {
       filePath = await generateFilePath(pool, currentPage.section_id, currentPage.title, currentPage.slug);
     }
 
-    writeVaultFile(filePath, newContent);
+    // Build metadata for frontmatter round-trip
+    const mergedPage = { ...currentPage, ...updates };
+    const vaultMeta = buildVaultMetadata({
+      status: mergedPage.status,
+      created_by: mergedPage.created_by,
+      sort_order: mergedPage.sort_order,
+      title: mergedPage.title,
+    });
+    writeVaultFile(filePath, newContent, vaultMeta);
     vaultFields = { file_path: filePath, content_cache: newContent };
   }
 
@@ -251,6 +263,80 @@ async function movePage(id, { parent_id, sort_order, section_id }) {
   return res.rows[0] || null;
 }
 
+// ── Bulk reorder ──────────────────────────────────────────
+// Accepts array of { id, sort_order }. All must belong to same section.
+// Updates DB in a single transaction. Writes vault frontmatter for pages with file_path.
+async function reorderPages(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw Object.assign(new Error('items must be a non-empty array'), { status: 400 });
+  }
+
+  const pool = getPool();
+  const ids = items.map(i => i.id);
+
+  // Validate: fetch all pages in one query
+  const res = await pool.query(`
+    SELECT id, section_id, file_path, status, created_by, sort_order, title
+    FROM ${SCHEMA}.pages
+    WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+  `, [ids]);
+
+  if (res.rows.length !== ids.length) {
+    throw Object.assign(new Error('One or more page IDs not found'), { status: 404 });
+  }
+
+  const sectionIds = new Set(res.rows.map(r => r.section_id));
+  if (sectionIds.size > 1) {
+    throw Object.assign(new Error('All pages must belong to the same section'), { status: 400 });
+  }
+
+  const pageMap = new Map(res.rows.map(r => [r.id, r]));
+
+  // Update DB in transaction
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const { id, sort_order } of items) {
+      await client.query(
+        `UPDATE ${SCHEMA}.pages SET sort_order = $1, updated_at = NOW()
+         WHERE id = $2 AND deleted_at IS NULL`,
+        [sort_order, id]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  // Update vault frontmatter for pages that have file_path
+  if (isVaultEnabled()) {
+    const { parseFrontmatter } = require('./frontmatter');
+    for (const { id, sort_order } of items) {
+      const page = pageMap.get(id);
+      if (!page || !page.file_path) continue;
+      try {
+        const absPath = resolveVaultPath(page.file_path);
+        if (fs.existsSync(absPath)) {
+          const raw = fs.readFileSync(absPath, 'utf8');
+          const { content } = parseFrontmatter(raw);
+          const meta = buildVaultMetadata({
+            status: page.status,
+            created_by: page.created_by,
+            sort_order,
+            title: page.title,
+          });
+          writeVaultFile(page.file_path, content, meta);
+        }
+      } catch {
+        // Vault write failure is non-fatal — DB already committed
+      }
+    }
+  }
+}
+
 // ── Soft delete ────────────────────────────────────────────
 // Does NOT delete the vault file — file stays for potential restore.
 async function deletePage(id) {
@@ -306,13 +392,31 @@ async function restorePageVersion(pageId, versionId) {
   });
 }
 
+// ── Vault metadata helpers ─────────────────────────────────
+
+/**
+ * Build frontmatter metadata object from page fields.
+ * Maps DB column names back to frontmatter keys.
+ */
+function buildVaultMetadata({ status, created_by, sort_order, title }) {
+  const meta = {};
+  if (title) meta.title = title;
+  if (status && status !== 'published') meta.status = status;
+  if (created_by && created_by !== 'user') meta.author = created_by;
+  if (sort_order !== undefined && sort_order !== null && sort_order !== 0) meta.order = sort_order;
+  return meta;
+}
+
 // ── Vault file helpers ─────────────────────────────────────
 
-function writeVaultFile(relativePath, content) {
+function writeVaultFile(relativePath, content, metadata) {
   const absPath = resolveVaultPath(relativePath);
   const dir = path.dirname(absPath);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(absPath, content, 'utf8');
+
+  // Prepend frontmatter if metadata provided
+  const fileContent = metadata ? serializeFrontmatter(metadata, content) : content;
+  fs.writeFileSync(absPath, fileContent, 'utf8');
 }
 
 function moveVaultFile(oldRelativePath, newRelativePath) {
@@ -367,7 +471,7 @@ function slugify(str) {
 
 module.exports = {
   getPageTree, getPage, getPageByPath,
-  createPage, updatePage, movePage, deletePage,
+  createPage, updatePage, movePage, reorderPages, deletePage,
   getPageVersions, restorePageVersion,
   createPageVersion,
 };

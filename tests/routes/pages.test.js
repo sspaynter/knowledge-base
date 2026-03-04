@@ -64,3 +64,59 @@ test('DELETE /api/pages/:id soft deletes', async () => {
     .set('Authorization', bearer);
   expect(res.status).toBe(404);
 });
+
+// ── Reorder tests ────────────────────────────────────────
+test('PATCH /api/pages/reorder reorders pages', async () => {
+  const make = async (title, order) => {
+    const res = await request(app)
+      .post('/api/pages')
+      .set('Authorization', bearer)
+      .send({ section_id: sectionId, title, slug: title.toLowerCase().replace(/ /g, '-'), sort_order: order });
+    return res.body;
+  };
+  const a = await make('Reorder A', 10);
+  const b = await make('Reorder B', 20);
+  const c = await make('Reorder C', 30);
+
+  // Reverse order: C=10, A=20, B=30
+  const res = await request(app)
+    .patch('/api/pages/reorder')
+    .set('Authorization', bearer)
+    .send({ items: [
+      { id: c.id, sort_order: 10 },
+      { id: a.id, sort_order: 20 },
+      { id: b.id, sort_order: 30 },
+    ]});
+  expect(res.status).toBe(200);
+  expect(res.body.ok).toBe(true);
+
+  // Confirm C comes before A in the tree
+  const tree = await request(app)
+    .get(`/api/pages/section/${sectionId}`)
+    .set('Authorization', bearer);
+  const titles = tree.body.map(p => p.title);
+  expect(titles.indexOf('Reorder C')).toBeLessThan(titles.indexOf('Reorder A'));
+}, 45000);
+
+test('PATCH /api/pages/reorder returns 400 for empty items', async () => {
+  const res = await request(app)
+    .patch('/api/pages/reorder')
+    .set('Authorization', bearer)
+    .send({ items: [] });
+  expect(res.status).toBe(400);
+});
+
+test('PATCH /api/pages/reorder returns 400 for invalid shape', async () => {
+  const res = await request(app)
+    .patch('/api/pages/reorder')
+    .set('Authorization', bearer)
+    .send({ items: [{ id: 'bad', sort_order: 10 }] });
+  expect(res.status).toBe(400);
+});
+
+test('PATCH /api/pages/reorder returns 401 without auth', async () => {
+  const res = await request(app)
+    .patch('/api/pages/reorder')
+    .send({ items: [{ id: 1, sort_order: 10 }] });
+  expect(res.status).toBe(401);
+});

@@ -59,7 +59,8 @@ export const getPage    = (id)         => request('GET',    `/api/pages/${id}`);
 export const createPage = (body)       => request('POST',   '/api/pages',         body);
 export const updatePage = (id, body)   => request('PATCH',  `/api/pages/${id}`,   body);
 export const deletePage = (id)         => request('DELETE', `/api/pages/${id}`);
-export const movePage   = (id, body)   => request('PATCH',  `/api/pages/${id}/move`, body);
+export const movePage      = (id, body)   => request('PATCH',  `/api/pages/${id}/move`, body);
+export const reorderPages = (items)      => request('PATCH',  '/api/pages/reorder', { items });
 
 // Assets
 export const listAssets  = (params = {}) => {

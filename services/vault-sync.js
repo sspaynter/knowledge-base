@@ -9,6 +9,7 @@ const path = require('path');
 const { VAULT_DIR, isVaultEnabled, toRelativePath } = require('./vault-config');
 const { getPool } = require('./database');
 const { createPageVersion } = require('./pages');
+const { parseFrontmatter, serializeFrontmatter, mapFrontmatterToColumns } = require('./frontmatter');
 
 const SCHEMA = 'knowledge_base';
 const DEBOUNCE_MS = 500;
@@ -97,17 +98,50 @@ async function handleSyncEvent(type, relativePath, absPath) {
 async function handleChange(relativePath, content) {
   const pool = getPool();
 
+  // Parse frontmatter
+  const { data: frontmatter, content: body } = parseFrontmatter(content);
+  const columns = mapFrontmatterToColumns(frontmatter);
+
+  // Build dynamic SET clause including any frontmatter-derived columns
+  const setClauses = ['content_cache = $2', 'updated_at = NOW()'];
+  const params = [relativePath, body];
+  let paramIdx = 3;
+
+  for (const [col, val] of Object.entries(columns)) {
+    if (col === '_parent_slug' || col === 'created_at') continue; // Do not overwrite created_at on change
+    setClauses.push(`${col} = $${paramIdx}`);
+    params.push(val);
+    paramIdx++;
+  }
+
+  // Resolve parent slug if present
+  if (columns._parent_slug) {
+    // Need section_id to resolve — get from current page
+    const current = await pool.query(
+      `SELECT section_id FROM ${SCHEMA}.pages WHERE file_path = $1 AND deleted_at IS NULL`,
+      [relativePath]
+    );
+    if (current.rows.length > 0) {
+      const parentId = await resolveParentSlug(pool, current.rows[0].section_id, columns._parent_slug);
+      if (parentId) {
+        setClauses.push(`parent_id = $${paramIdx}`);
+        params.push(parentId);
+        paramIdx++;
+      }
+    }
+  }
+
   const result = await pool.query(
     `UPDATE ${SCHEMA}.pages
-     SET content_cache = $2, updated_at = NOW()
+     SET ${setClauses.join(', ')}
      WHERE file_path = $1 AND deleted_at IS NULL
      RETURNING id`,
-    [relativePath, content]
+    params
   );
 
   if (result.rowCount > 0) {
     console.log(`Vault sync [change]: ${relativePath} → page ${result.rows[0].id}`);
-    await createPageVersion(pool, result.rows[0].id, content, 'External edit detected', 'vault');
+    await createPageVersion(pool, result.rows[0].id, body, 'External edit detected', 'vault');
   } else {
     // File exists but no page record — treat as new file
     await handleAdd(relativePath, content);
@@ -118,30 +152,67 @@ async function handleChange(relativePath, content) {
 async function handleAdd(relativePath, content) {
   const pool = getPool();
 
+  // Parse frontmatter
+  const { data: frontmatter, content: body } = parseFrontmatter(content);
+  const columns = mapFrontmatterToColumns(frontmatter);
+
   // Check if page already exists with this file_path
   const existing = await pool.query(
     `SELECT id FROM ${SCHEMA}.pages WHERE file_path = $1`,
     [relativePath]
   );
   if (existing.rows.length > 0) {
-    // Already exists — update content instead
+    // Already exists — update content and any frontmatter fields
+    const setClauses = ['content_cache = $2', 'deleted_at = NULL', 'updated_at = NOW()'];
+    const params = [relativePath, body];
+    let paramIdx = 3;
+
+    for (const [col, val] of Object.entries(columns)) {
+      if (col === '_parent_slug') continue;
+      setClauses.push(`${col} = $${paramIdx}`);
+      params.push(val);
+      paramIdx++;
+    }
+
     await pool.query(
-      `UPDATE ${SCHEMA}.pages SET content_cache = $2, deleted_at = NULL, updated_at = NOW() WHERE file_path = $1`,
-      [relativePath, content]
+      `UPDATE ${SCHEMA}.pages SET ${setClauses.join(', ')} WHERE file_path = $1`,
+      params
     );
     console.log(`Vault sync [add]: ${relativePath} → restored page ${existing.rows[0].id}`);
     return existing.rows[0].id;
   }
 
   // Infer workspace, section, title from path
-  const { sectionId, title } = await inferLocationFromPath(relativePath);
-  const slug = slugify(title);
+  const { sectionId, title: inferredTitle } = await inferLocationFromPath(relativePath);
+  const pageTitle = columns.title || inferredTitle;
+  const slug = slugify(pageTitle);
+
+  // Resolve parent slug if present
+  let parentId = null;
+  if (columns._parent_slug) {
+    parentId = await resolveParentSlug(pool, sectionId, columns._parent_slug);
+  }
+
+  // sort_order: use frontmatter value, or fall back to next gapped value
+  const sortOrder = columns.sort_order !== undefined ? columns.sort_order : await nextSortOrder(pool, sectionId);
 
   const result = await pool.query(
-    `INSERT INTO ${SCHEMA}.pages (section_id, title, slug, content, content_cache, file_path, status, created_by)
-     VALUES ($1, $2, $3, $4, $4, $5, 'draft', 'user')
+    `INSERT INTO ${SCHEMA}.pages (section_id, parent_id, title, slug, content, content_cache, file_path, status, created_by, sort_order, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11)
      RETURNING id`,
-    [sectionId, title, slug, content, relativePath]
+    [
+      sectionId,
+      parentId,
+      pageTitle,
+      slug,
+      body,
+      relativePath,
+      columns.status || 'draft',
+      columns.created_by || 'user',
+      sortOrder,
+      columns.created_at || new Date().toISOString(),
+      columns.updated_at || new Date().toISOString(),
+    ]
   );
 
   console.log(`Vault sync [add]: ${relativePath} → new page ${result.rows[0].id}`);
@@ -172,23 +243,20 @@ async function syncFile(relativePath) {
   }
 
   const content = fs.readFileSync(absPath, 'utf8');
-  const pool = getPool();
 
-  // Try update first
+  // Try update first (handleChange parses frontmatter)
+  const pool = getPool();
   const existing = await pool.query(
     `SELECT id FROM ${SCHEMA}.pages WHERE file_path = $1`,
     [relativePath]
   );
 
   if (existing.rows.length > 0) {
-    await pool.query(
-      `UPDATE ${SCHEMA}.pages SET content_cache = $2, updated_at = NOW() WHERE file_path = $1`,
-      [relativePath, content]
-    );
+    await handleChange(relativePath, content);
     return existing.rows[0].id;
   }
 
-  // Create new
+  // Create new (handleAdd parses frontmatter)
   return handleAdd(relativePath, content);
 }
 
@@ -240,11 +308,14 @@ async function findOrCreateSection(workspaceFolder, sectionFolder) {
   if (wsResult.rows.length > 0) {
     workspaceId = wsResult.rows[0].id;
   } else {
-    // Create workspace
+    // Create workspace with gapped sort_order
     const name = workspaceFolder.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const maxWs = await pool.query(
+      `SELECT COALESCE(MAX(sort_order), 0) + 10 AS next_order FROM ${SCHEMA}.workspaces`
+    );
     const newWs = await pool.query(
-      `INSERT INTO ${SCHEMA}.workspaces (name, slug) VALUES ($1, $2) RETURNING id`,
-      [name, wsSlug]
+      `INSERT INTO ${SCHEMA}.workspaces (name, slug, sort_order) VALUES ($1, $2, $3) RETURNING id`,
+      [name, wsSlug, maxWs.rows[0].next_order]
     );
     workspaceId = newWs.rows[0].id;
     console.log(`Vault sync: created workspace "${name}" (${wsSlug})`);
@@ -260,11 +331,15 @@ async function findOrCreateSection(workspaceFolder, sectionFolder) {
     return secResult.rows[0].id;
   }
 
-  // Create section
+  // Create section with gapped sort_order
   const sectionName = sectionFolder.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const maxSec = await pool.query(
+    `SELECT COALESCE(MAX(sort_order), 0) + 10 AS next_order FROM ${SCHEMA}.sections WHERE workspace_id = $1`,
+    [workspaceId]
+  );
   const newSec = await pool.query(
-    `INSERT INTO ${SCHEMA}.sections (workspace_id, name, slug) VALUES ($1, $2, $3) RETURNING id`,
-    [workspaceId, sectionName, secSlug]
+    `INSERT INTO ${SCHEMA}.sections (workspace_id, name, slug, sort_order) VALUES ($1, $2, $3, $4) RETURNING id`,
+    [workspaceId, sectionName, secSlug, maxSec.rows[0].next_order]
   );
   console.log(`Vault sync: created section "${sectionName}" in workspace ${workspaceId}`);
   return newSec.rows[0].id;
@@ -273,6 +348,30 @@ async function findOrCreateSection(workspaceFolder, sectionFolder) {
 // Known workspace folder → DB slug aliases
 // Add entries here when a vault folder name differs from its desired DB slug
 const WORKSPACE_ALIASES = {};
+
+// ── Frontmatter DB helpers ──────────────────────────────────
+
+/**
+ * Resolve parent slug to parent_id within the same section.
+ */
+async function resolveParentSlug(pool, sectionId, parentSlug) {
+  const res = await pool.query(
+    `SELECT id FROM ${SCHEMA}.pages WHERE section_id = $1 AND slug = $2 AND deleted_at IS NULL`,
+    [sectionId, parentSlug]
+  );
+  return res.rows.length > 0 ? res.rows[0].id : null;
+}
+
+/**
+ * Get the next sort_order value for a section (MAX + 10, gapped numbering).
+ */
+async function nextSortOrder(pool, sectionId) {
+  const res = await pool.query(
+    `SELECT COALESCE(MAX(sort_order), 0) + 10 AS next_order FROM ${SCHEMA}.pages WHERE section_id = $1 AND deleted_at IS NULL`,
+    [sectionId]
+  );
+  return res.rows[0].next_order;
+}
 
 // ── Helpers ─────────────────────────────────────────────────
 function titleFromFilename(filename) {
@@ -291,4 +390,9 @@ function slugify(str) {
     .replace(/(^-|-$)/g, '');
 }
 
-module.exports = { startWatcher, syncFile, handleAdd, handleChange, handleUnlink, inferLocationFromPath, slugify, titleFromFilename };
+module.exports = {
+  startWatcher, syncFile,
+  handleAdd, handleChange, handleUnlink,
+  inferLocationFromPath, slugify, titleFromFilename,
+  parseFrontmatter, serializeFrontmatter, mapFrontmatterToColumns,
+};
