@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { getPool } = require('./database');
 const { isVaultEnabled, resolveVaultPath, VAULT_DIR } = require('./vault-config');
+const { serializeFrontmatter } = require('./frontmatter');
 
 const SCHEMA = 'knowledge_base';
 
@@ -87,15 +88,17 @@ async function getPageByPath(filePath) {
 }
 
 // ── Three-layer content fallback ──────────────────────────
-// 1. Vault file (if file_path set and vault enabled)
-// 2. content_cache (synced copy in DB)
+// 1. Vault file (if file_path set and vault enabled) — strip frontmatter
+// 2. content_cache (synced copy in DB) — already stripped at sync time
 // 3. content column (pre-migration pages)
 function resolveContent(page) {
   if (page.file_path && isVaultEnabled()) {
     try {
       const absPath = resolveVaultPath(page.file_path);
       if (fs.existsSync(absPath)) {
-        return fs.readFileSync(absPath, 'utf8');
+        const raw = fs.readFileSync(absPath, 'utf8');
+        const { parseFrontmatter: parse } = require('./frontmatter');
+        return parse(raw).content;
       }
     } catch {
       // Fall through to content_cache
@@ -119,7 +122,8 @@ async function createPage({ section_id, parent_id, title, slug, content, templat
   let filePath = null;
   if (isVaultEnabled() && section_id) {
     filePath = await generateFilePath(pool, section_id, title || 'untitled', slug);
-    writeVaultFile(filePath, pageContent);
+    const vaultMeta = buildVaultMetadata({ status, created_by, sort_order, title });
+    writeVaultFile(filePath, pageContent, vaultMeta);
   }
 
   const res = await pool.query(`
@@ -177,7 +181,15 @@ async function updatePage(id, updates) {
       filePath = await generateFilePath(pool, currentPage.section_id, currentPage.title, currentPage.slug);
     }
 
-    writeVaultFile(filePath, newContent);
+    // Build metadata for frontmatter round-trip
+    const mergedPage = { ...currentPage, ...updates };
+    const vaultMeta = buildVaultMetadata({
+      status: mergedPage.status,
+      created_by: mergedPage.created_by,
+      sort_order: mergedPage.sort_order,
+      title: mergedPage.title,
+    });
+    writeVaultFile(filePath, newContent, vaultMeta);
     vaultFields = { file_path: filePath, content_cache: newContent };
   }
 
@@ -306,13 +318,31 @@ async function restorePageVersion(pageId, versionId) {
   });
 }
 
+// ── Vault metadata helpers ─────────────────────────────────
+
+/**
+ * Build frontmatter metadata object from page fields.
+ * Maps DB column names back to frontmatter keys.
+ */
+function buildVaultMetadata({ status, created_by, sort_order, title }) {
+  const meta = {};
+  if (title) meta.title = title;
+  if (status && status !== 'published') meta.status = status;
+  if (created_by && created_by !== 'user') meta.author = created_by;
+  if (sort_order !== undefined && sort_order !== null && sort_order !== 0) meta.order = sort_order;
+  return meta;
+}
+
 // ── Vault file helpers ─────────────────────────────────────
 
-function writeVaultFile(relativePath, content) {
+function writeVaultFile(relativePath, content, metadata) {
   const absPath = resolveVaultPath(relativePath);
   const dir = path.dirname(absPath);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(absPath, content, 'utf8');
+
+  // Prepend frontmatter if metadata provided
+  const fileContent = metadata ? serializeFrontmatter(metadata, content) : content;
+  fs.writeFileSync(absPath, fileContent, 'utf8');
 }
 
 function moveVaultFile(oldRelativePath, newRelativePath) {

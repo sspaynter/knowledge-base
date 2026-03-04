@@ -15,6 +15,7 @@ const {
   slugify,
   titleFromFilename,
 } = require('../services/vault-sync');
+const { parseFrontmatter } = require('../services/frontmatter');
 
 const SCHEMA = 'knowledge_base';
 const PREFIX = 'test-vault-sync';  // namespace all test data
@@ -247,5 +248,98 @@ describe('handleUnlink', () => {
       `SELECT deleted_at FROM ${SCHEMA}.pages WHERE id = $1`, [pageId]
     );
     expect(second.rows[0].deleted_at.getTime()).toBe(firstDeleted.getTime());
+  });
+});
+
+// ── Frontmatter integration ─────────────────────────────────
+
+describe('handleAdd with frontmatter', () => {
+  test('parses frontmatter and sets DB columns', async () => {
+    const rel = `${PREFIX}-ws/${PREFIX}-sec/fm-add.md`;
+    const content = '---\nstatus: published\norder: 20\nauthor: claude\ntitle: Custom Title\n---\n\n# Custom Title\n\nBody.';
+
+    const pageId = await handleAdd(rel, content);
+    const pool = db.getPool();
+    const page = await pool.query(
+      `SELECT title, status, created_by, sort_order, content_cache FROM ${SCHEMA}.pages WHERE id = $1`,
+      [pageId]
+    );
+
+    expect(page.rows[0].title).toBe('Custom Title');
+    expect(page.rows[0].status).toBe('published');
+    expect(page.rows[0].created_by).toBe('claude');
+    expect(page.rows[0].sort_order).toBe(20);
+    // content_cache should NOT contain frontmatter
+    expect(page.rows[0].content_cache).not.toContain('---');
+    expect(page.rows[0].content_cache).toContain('# Custom Title');
+  });
+
+  test('works without frontmatter (backward compatible)', async () => {
+    const rel = `${PREFIX}-ws/${PREFIX}-sec/fm-none.md`;
+    const content = '# No Frontmatter\n\nJust a regular file.';
+
+    const pageId = await handleAdd(rel, content);
+    const pool = db.getPool();
+    const page = await pool.query(
+      `SELECT title, status, created_by, content_cache FROM ${SCHEMA}.pages WHERE id = $1`,
+      [pageId]
+    );
+
+    expect(page.rows[0].title).toBe('Fm None');
+    expect(page.rows[0].status).toBe('draft');
+    expect(page.rows[0].created_by).toBe('user');
+    expect(page.rows[0].content_cache).toBe(content);
+  });
+
+  test('assigns gapped sort_order when not in frontmatter', async () => {
+    const rel1 = `${PREFIX}-ws/${PREFIX}-sec/fm-gap1.md`;
+    const rel2 = `${PREFIX}-ws/${PREFIX}-sec/fm-gap2.md`;
+
+    await handleAdd(rel1, '---\norder: 10\n---\n\n# First');
+    const id2 = await handleAdd(rel2, '# Second (no frontmatter)');
+
+    const pool = db.getPool();
+    const page2 = await pool.query(
+      `SELECT sort_order FROM ${SCHEMA}.pages WHERE id = $1`, [id2]
+    );
+
+    // Should be MAX(sort_order in section) + 10 = 20
+    expect(page2.rows[0].sort_order).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe('handleChange with frontmatter', () => {
+  test('updates metadata columns from frontmatter', async () => {
+    const rel = `${PREFIX}-ws/${PREFIX}-sec/fm-change.md`;
+    await handleAdd(rel, '---\nstatus: draft\n---\n\n# Original');
+
+    await handleChange(rel, '---\nstatus: published\norder: 50\n---\n\n# Updated');
+
+    const pool = db.getPool();
+    const page = await pool.query(
+      `SELECT status, sort_order, content_cache FROM ${SCHEMA}.pages WHERE file_path = $1`,
+      [rel]
+    );
+
+    expect(page.rows[0].status).toBe('published');
+    expect(page.rows[0].sort_order).toBe(50);
+    expect(page.rows[0].content_cache).not.toContain('---');
+    expect(page.rows[0].content_cache).toContain('# Updated');
+  });
+
+  test('strips frontmatter from content_cache on change', async () => {
+    const rel = `${PREFIX}-ws/${PREFIX}-sec/fm-strip.md`;
+    await handleAdd(rel, '# Initial');
+
+    await handleChange(rel, '---\ntitle: New Title\n---\n\n# New Title');
+
+    const pool = db.getPool();
+    const page = await pool.query(
+      `SELECT title, content_cache FROM ${SCHEMA}.pages WHERE file_path = $1`,
+      [rel]
+    );
+
+    expect(page.rows[0].title).toBe('New Title');
+    expect(page.rows[0].content_cache).toBe('\n# New Title');
   });
 });

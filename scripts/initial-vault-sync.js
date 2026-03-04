@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
+const { parseFrontmatter, mapFrontmatterToColumns } = require('../services/frontmatter');
 
 const VAULT_DIR = process.env.VAULT_DIR;
 const SCHEMA = 'knowledge_base';
@@ -64,13 +65,16 @@ async function main() {
       const slug = slugify(filename);
       const title = titleFromFilename(filename);
 
+      // Parse frontmatter from file content
+      const { content: body } = parseFrontmatter(content);
+
       // Skip if already synced
       const alreadySynced = existingPages.rows.find(p => p.file_path === relativePath);
       if (alreadySynced) {
-        // Update content_cache
+        // Update content_cache with body (frontmatter stripped)
         await client.query(
           `UPDATE ${SCHEMA}.pages SET content_cache = $2 WHERE id = $1`,
-          [alreadySynced.id, content]
+          [alreadySynced.id, body]
         );
         matched++;
         console.log(`  [matched] ${relativePath} → page ${alreadySynced.id} (already synced)`);
@@ -86,21 +90,31 @@ async function main() {
       }
 
       if (existingPage && !existingPage.file_path) {
-        // Match found — update with file_path and content_cache
+        // Match found — update with file_path and content_cache (frontmatter stripped)
         await client.query(
           `UPDATE ${SCHEMA}.pages SET file_path = $2, content_cache = $3 WHERE id = $1`,
-          [existingPage.id, relativePath, content]
+          [existingPage.id, relativePath, body]
         );
         matched++;
         console.log(`  [matched] ${relativePath} → page ${existingPage.id} (${existingPage.title})`);
       } else {
         // No match — create new page
+        const { data: fm, content: body } = parseFrontmatter(content);
+        const fmCols = mapFrontmatterToColumns(fm);
+        const pageTitle = fmCols.title || title;
+        const pageSlug = fmCols.title ? slugify(fmCols.title) : slug;
+
         const { sectionId } = await inferLocationFromPath(client, relativePath);
         const result = await client.query(
-          `INSERT INTO ${SCHEMA}.pages (section_id, title, slug, content, content_cache, file_path, status, created_by)
-           VALUES ($1, $2, $3, $4, $4, $5, 'published', 'user')
+          `INSERT INTO ${SCHEMA}.pages (section_id, title, slug, content, content_cache, file_path, status, created_by, sort_order)
+           VALUES ($1, $2, $3, $4, $4, $5, $6, $7, $8)
            RETURNING id`,
-          [sectionId, title, slug, content, relativePath]
+          [
+            sectionId, pageTitle, pageSlug, body, relativePath,
+            fmCols.status || 'published',
+            fmCols.created_by || 'user',
+            fmCols.sort_order || 0,
+          ]
         );
         created++;
         console.log(`  [created] ${relativePath} → new page ${result.rows[0].id}`);

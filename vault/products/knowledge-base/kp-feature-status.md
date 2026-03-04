@@ -5,7 +5,7 @@
 **Section:** Knowledge Platform
 **Status:** Active — updated each build session
 **Created:** 2026-03-03
-**Updated:** 2026-03-03 (after Phase 5, session 34)
+**Updated:** 2026-03-04 (Map view populated, session 39)
 **Author:** Simon Paynter + Claude
 
 ---
@@ -46,7 +46,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Insert Diagram picker | Live | 7 pre-populated templates with dropdown picker |
 | Click-to-edit Mermaid in reading view | Live | Inline editor panel, live preview, writes back to content |
 | WYSIWYG editor (contenteditable) | Not built | Prototype explored it; current build uses markdown source only |
-| File attachment upload | Live | multer, /uploads static mount, /api/upload endpoint |
+| File attachment upload | Live | multer, /uploads static mount, /api/upload endpoint. **Security note:** `/uploads` route is unauthenticated static — needs `requireAuth` middleware (TODO #33, remediation: `docs/knowledge-base/kp-security-hardening.md`) |
 
 ### Search
 
@@ -130,6 +130,18 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | POST /api/sync | Live | Trigger sync for specific vault file |
 | Initial vault sync script | Live | scripts/initial-vault-sync.js — one-time, 17 files synced |
 | v1→v2 migration script | Live | scripts/migrate-v2.js — idempotent: vault→DB, DB→vault, search_vector refresh |
+| Frontmatter metadata parsing | Planned | TODO #35 — parse YAML frontmatter (status, order, parent, tags, title, author, dates) and map to DB columns. Round-trip: editor preserves frontmatter on save. |
+| sort_order from frontmatter | Planned | TODO #36 — vault sync reads `order` from frontmatter; falls back to MAX(sort_order) + 10. Gapped numbering (10, 20, 30...) for future drag-to-reorder (#13). |
+
+### Page ordering
+
+| Feature | Status | Notes |
+|---|---|---|
+| SQL ORDER BY sort_order | Live | All queries order by sort_order, then name/title — already correct |
+| Frontend respects API order | Live | No client-side re-sorting — already correct |
+| Seed data sort_order values | Live | 9 workspaces and 14 sections have explicit values |
+| Vault sync sets sort_order | Planned | TODO #36 — currently missing from INSERT; items get NULL/0 |
+| Drag-to-reorder | Planned | TODO #13 (P3) — depends on #36 gapped numbering and #35 frontmatter round-trip |
 
 ### Dark / light mode
 
@@ -166,7 +178,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Migration script tests | Live | 20 tests: schema idempotency, seed idempotency, GENERATED ALWAYS AS behaviour, helper functions |
 | npm test CI gate | Live | GitHub Actions: test job (Postgres service) gates build job — fail fast on test failures |
 | .dockerignore | Live | Excludes node_modules, tests, vault, docs from build context |
-| Production deploy | Pending | v1.0.0 still live at kb.ss-42.com — Task 6.7 awaits staging review |
+| Production deploy | Live | v2.0.0 deployed to kb.ss-42.com — session 37 |
 
 ---
 
@@ -192,10 +204,18 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | 33 | 5 | Migration script, inbox endpoint, asset browser, page status filtering, map diagram toggle |
 | 34 | — | Favicon fix, kp-architecture.md updated (Phases 2–5), kp-design-decisions.md updated (ADR-006 superseded, ADR-009 added, ADR-008 updated) |
 | 36 | 6 | 88 tests (17 suites), CI/CD test gate, .dockerignore, vault taxonomy restructured (it-and-projects → operations/products/personal), NAS vault + DB cleaned, kb-vault-management.md written |
+| 37 | 6.7 | Production deploy: Dockerfile healthcheck fix (IPv6), CI migration runner fix, container recreated with vault mount, DB cleaned, v2.0.0 tagged and released |
+| 38 | — | Security audit: `/uploads` unauthenticated static route identified, security checklist updated, remediation doc created, TODO #33 added |
+| 39 | — | Skill asset registration: 50 assets (20 global skills, 5 agents, 14 superpowers, 9 job-app skills, 2 job-app agents) + 34 relationships registered via `scripts/register-skills.js`. Map view populated. TODO #32 completed. |
 
 ---
 
-## What still needs doing before production
+## Deferred features
 
-1. **Phase 6:** Full test suite (vault sync, API endpoints, Mermaid, migration script), CI/CD npm test gate, production deploy to `kb.ss-42.com`
-2. **Deferred features:** Inbox UI, WYSIWYG editor, Excalidraw export, asset workspace filter, background sync
+- **Security hardening** — authenticated uploads, remove hardcoded DB fallback credentials, COOKIE_DOMAIN startup warning (TODO #33, `docs/knowledge-base/kp-security-hardening.md`)
+- Inbox UI (API exists, no frontend view)
+- WYSIWYG editor (markdown source mode is current)
+- Excalidraw export
+- Asset workspace filter
+- Background sync (PWA)
+- Syntax highlighting in code blocks
