@@ -10,9 +10,6 @@ const { serializeFrontmatter } = require('./frontmatter');
 const SCHEMA = 'knowledge_base';
 
 // ── Tree query: all pages for a section ───────────────────
-// Returns flat array ordered by sort_order, title.
-// The client's renderPageTree() handles recursive tree-building
-// by filtering on parent_id itself — do not nest here.
 async function getPageTree(sectionId) {
   const res = await getPool().query(`
     SELECT id, parent_id, title, slug, status, template_type,
@@ -21,7 +18,13 @@ async function getPageTree(sectionId) {
     WHERE section_id = $1 AND deleted_at IS NULL
     ORDER BY sort_order, title
   `, [sectionId]);
-  return res.rows;
+  return buildTree(res.rows);
+}
+
+function buildTree(rows, parentId = null) {
+  return rows
+    .filter(r => r.parent_id === parentId)
+    .map(r => ({ ...r, children: buildTree(rows, r.id) }));
 }
 
 // ── Single page (with vault read fallback) ────────────────
