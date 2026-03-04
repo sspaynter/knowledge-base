@@ -263,6 +263,80 @@ async function movePage(id, { parent_id, sort_order, section_id }) {
   return res.rows[0] || null;
 }
 
+// ── Bulk reorder ──────────────────────────────────────────
+// Accepts array of { id, sort_order }. All must belong to same section.
+// Updates DB in a single transaction. Writes vault frontmatter for pages with file_path.
+async function reorderPages(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw Object.assign(new Error('items must be a non-empty array'), { status: 400 });
+  }
+
+  const pool = getPool();
+  const ids = items.map(i => i.id);
+
+  // Validate: fetch all pages in one query
+  const res = await pool.query(`
+    SELECT id, section_id, file_path, status, created_by, sort_order, title
+    FROM ${SCHEMA}.pages
+    WHERE id = ANY($1::int[]) AND deleted_at IS NULL
+  `, [ids]);
+
+  if (res.rows.length !== ids.length) {
+    throw Object.assign(new Error('One or more page IDs not found'), { status: 404 });
+  }
+
+  const sectionIds = new Set(res.rows.map(r => r.section_id));
+  if (sectionIds.size > 1) {
+    throw Object.assign(new Error('All pages must belong to the same section'), { status: 400 });
+  }
+
+  const pageMap = new Map(res.rows.map(r => [r.id, r]));
+
+  // Update DB in transaction
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const { id, sort_order } of items) {
+      await client.query(
+        `UPDATE ${SCHEMA}.pages SET sort_order = $1, updated_at = NOW()
+         WHERE id = $2 AND deleted_at IS NULL`,
+        [sort_order, id]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  // Update vault frontmatter for pages that have file_path
+  if (isVaultEnabled()) {
+    const { parseFrontmatter } = require('./frontmatter');
+    for (const { id, sort_order } of items) {
+      const page = pageMap.get(id);
+      if (!page || !page.file_path) continue;
+      try {
+        const absPath = resolveVaultPath(page.file_path);
+        if (fs.existsSync(absPath)) {
+          const raw = fs.readFileSync(absPath, 'utf8');
+          const { content } = parseFrontmatter(raw);
+          const meta = buildVaultMetadata({
+            status: page.status,
+            created_by: page.created_by,
+            sort_order,
+            title: page.title,
+          });
+          writeVaultFile(page.file_path, content, meta);
+        }
+      } catch {
+        // Vault write failure is non-fatal — DB already committed
+      }
+    }
+  }
+}
+
 // ── Soft delete ────────────────────────────────────────────
 // Does NOT delete the vault file — file stays for potential restore.
 async function deletePage(id) {
@@ -397,7 +471,7 @@ function slugify(str) {
 
 module.exports = {
   getPageTree, getPage, getPageByPath,
-  createPage, updatePage, movePage, deletePage,
+  createPage, updatePage, movePage, reorderPages, deletePage,
   getPageVersions, restorePageVersion,
   createPageVersion,
 };

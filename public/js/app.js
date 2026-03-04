@@ -81,7 +81,26 @@ function renderAppRail() {
   // Built/add-on apps (bottom)
   BUILT_APPS.forEach(app => rail.appendChild(makeRailItem(app)));
 
+  // Version label (bottom of rail)
+  fetchVersion().then(v => {
+    if (!v) return;
+    const ver = document.createElement('li');
+    ver.className = 'rail__version';
+    ver.setAttribute('aria-hidden', 'true');
+    ver.textContent = `v${v}`;
+    rail.appendChild(ver);
+  });
+
   window.lucide.createIcons();
+}
+
+async function fetchVersion() {
+  try {
+    const res = await fetch('/api/version');
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.version || null;
+  } catch { return null; }
 }
 
 function makeRailItem(app) {
@@ -294,7 +313,17 @@ function renderPageTree(pages, container, parentId = null, depth = 0) {
 
       item.appendChild(icon);
       item.appendChild(title);
-      item.addEventListener('click', () => selectPage(page));
+      item.addEventListener('click', (e) => {
+        if (e.defaultPrevented) return; // Skip if drag just finished
+        selectPage(page);
+      });
+
+      // Drag-to-reorder for editors
+      if (store.user?.role === 'editor' || store.user?.role === 'admin') {
+        item.draggable = true;
+        attachDragHandlers(item, container);
+      }
+
       li.appendChild(item);
       container.appendChild(li);
 
@@ -302,6 +331,104 @@ function renderPageTree(pages, container, parentId = null, depth = 0) {
     });
 
   window.lucide.createIcons();
+}
+
+// ── Drag-to-reorder ──────────────────────────
+let _dragSrc = null;
+
+function attachDragHandlers(item, container) {
+  item.addEventListener('dragstart', (e) => {
+    _dragSrc = item;
+    item.classList.add('page-item--dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.dataset.id);
+  });
+
+  item.addEventListener('dragend', () => {
+    if (_dragSrc) _dragSrc.classList.remove('page-item--dragging');
+    container.querySelectorAll('.page-drop-indicator').forEach(el => el.remove());
+    container.querySelectorAll('.page-item--drag-over').forEach(el => {
+      el.classList.remove('page-item--drag-over');
+    });
+    _dragSrc = null;
+  });
+
+  item.addEventListener('dragover', (e) => {
+    if (!_dragSrc || _dragSrc === item) return;
+    if (_dragSrc.dataset.depth !== item.dataset.depth) return;
+
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    // Clear previous indicators
+    container.querySelectorAll('.page-drop-indicator').forEach(el => el.remove());
+    container.querySelectorAll('.page-item--drag-over').forEach(el => {
+      el.classList.remove('page-item--drag-over');
+    });
+
+    // Show drop indicator above or below based on cursor position
+    const rect = item.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const indicator = document.createElement('div');
+    indicator.className = 'page-drop-indicator';
+
+    const li = item.closest('li');
+    if (e.clientY < midY) {
+      li.before(indicator);
+    } else {
+      li.after(indicator);
+    }
+    item.classList.add('page-item--drag-over');
+  });
+
+  item.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    if (!_dragSrc || _dragSrc === item) return;
+    if (_dragSrc.dataset.depth !== item.dataset.depth) return;
+
+    // Clean up
+    container.querySelectorAll('.page-drop-indicator').forEach(el => el.remove());
+    item.classList.remove('page-item--drag-over');
+
+    // Determine insert position
+    const rect = item.getBoundingClientRect();
+    const insertBefore = e.clientY < (rect.top + rect.height / 2);
+
+    // DOM reorder
+    const srcLi = _dragSrc.closest('li');
+    const tgtLi = item.closest('li');
+    if (insertBefore) {
+      tgtLi.before(srcLi);
+    } else {
+      tgtLi.after(srcLi);
+    }
+
+    await commitReorder(container, Number(_dragSrc.dataset.depth));
+  });
+}
+
+async function commitReorder(container, depth) {
+  const depthItems = Array.from(
+    container.querySelectorAll(`.page-item[data-depth="${depth}"]`)
+  );
+  const items = depthItems.map((el, i) => ({
+    id: Number(el.dataset.id),
+    sort_order: (i + 1) * 10,
+  }));
+
+  try {
+    await api.reorderPages(items);
+  } catch (_) {
+    toastError('Could not save page order');
+    // Reload section from server
+    const sectionContainer = container.closest('[id^="pages-"]') || container;
+    const sectionId = (sectionContainer.id || '').replace('pages-', '');
+    if (sectionId) {
+      sectionContainer.textContent = '';
+      sectionContainer.dataset.loaded = 'false';
+      loadPages(sectionId, sectionContainer);
+    }
+  }
 }
 
 /** Re-apply status filter visibility to all currently-rendered page items. */

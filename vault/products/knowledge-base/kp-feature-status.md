@@ -89,6 +89,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 |---|---|---|
 | Three-column layout (desktop) | Live | Rail 54px + strip 152px + sidebar 244px + content pane |
 | Two-tier app rail | Live | CORE_APPS (KB, To Do) above divider; BUILT_APPS (Applyr) below |
+| Version label in rail | Live | Bottom of rail, fetched from /api/version, JetBrains Mono 10px |
 | Workspace strip (collapsible) | Live | 152px, collapse persisted to localStorage |
 | Responsive (tablet 768–1023px) | Live | Rail + strip hidden, sidebar as overlay |
 | Responsive (mobile <768px) | Live | Full-width, sidebar as slide-out drawer with backdrop |
@@ -142,7 +143,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Seed data sort_order values | Live | 9 workspaces (10-90) and 14 sections (10-40 per workspace) — gapped numbering |
 | Vault sync sets sort_order | Live | #36 — reads from frontmatter `order` field; falls back to MAX + 10 |
 | Workspace/section auto-create sort_order | Live | #36 — new workspaces and sections get MAX(sort_order) + 10 |
-| Drag-to-reorder | Planned | TODO #13 (P3) — depends on #36 gapped numbering and #35 frontmatter round-trip |
+| Drag-to-reorder | Live | #13 — native HTML5 drag-and-drop, PATCH /api/pages/reorder bulk endpoint, gapped sort_order assignment, vault frontmatter updated on reorder. Editor/admin role required. |
 
 ### Dark / light mode
 
@@ -209,6 +210,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | 38 | — | Security audit: `/uploads` unauthenticated static route identified, security checklist updated, remediation doc created, TODO #33 added |
 | 39 | — | Skill asset registration: 50 assets (20 global skills, 5 agents, 14 superpowers, 9 job-app skills, 2 job-app agents) + 34 relationships registered via `scripts/register-skills.js`. Map view populated. TODO #32 completed. |
 | 40 | #35 + #36 | Frontmatter metadata parsing (js-yaml, 7 field mappings, round-trip writes) + gapped sort_order (seed 10/20/30, vault sync MAX+10, archived status migration). 27 new tests (22 unit + 5 integration). New file: `services/frontmatter.js`. |
+| 40 | #13 + UI | Drag-to-reorder: native HTML5 DnD in sidebar, PATCH /api/pages/reorder bulk endpoint (transactional), vault frontmatter updated on reorder, 4 new API tests. Version number in rail UI. package.json → 2.0.0. Global CLAUDE.md vault writing instructions added. |
 
 ---
 

@@ -231,6 +231,18 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
 }
 .rail__add-btn:hover { background: var(--surface-2); color: var(--text-1); }
 
+.rail__version {
+  margin-top: auto;
+  padding: 8px 4px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-3);
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  user-select: none;
+}
+
 /* ── 5. SECTION SIDEBAR ───────────────────── */
 .sidebar {
   width: var(--sidebar-w);
@@ -327,6 +339,18 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
 .page-item[data-depth="1"] { padding-left: 26px; }
 .page-item[data-depth="2"] { padding-left: 40px; }
 .page-item[data-depth="3"] { padding-left: 54px; }
+
+/* Page drag-and-drop */
+.page-item[draggable="true"] { cursor: grab; }
+.page-item--dragging { opacity: 0.4; cursor: grabbing; }
+.page-item--drag-over { background: var(--accent-bg); }
+.page-drop-indicator {
+  height: 2px;
+  margin: 0 4px;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+}
 
 /* ── 6. TOP BAR COMPONENTS ────────────────── */
 .topbar__left {

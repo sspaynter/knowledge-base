@@ -41,6 +41,27 @@ router.post('/', requireRole('editor'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PATCH /api/pages/reorder — bulk reorder pages within a section
+// Must be before /:id wildcard route
+router.patch('/reorder', requireRole('editor'), async (req, res, next) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items must be a non-empty array' });
+    }
+    for (const item of items) {
+      if (typeof item.id !== 'number' || typeof item.sort_order !== 'number') {
+        return res.status(400).json({ error: 'Each item must have numeric id and sort_order' });
+      }
+    }
+    await pages.reorderPages(items);
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+});
+
 router.patch('/:id', requireRole('editor'), async (req, res, next) => {
   try {
     const page = await pages.updatePage(req.params.id, req.body);
