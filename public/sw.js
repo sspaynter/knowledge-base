@@ -2,7 +2,7 @@
 // Strategy: cache-first for static assets, network-first for API calls.
 // Offline editing is NOT supported in v2.0 — read-only cache.
 
-const CACHE_NAME = 'kb-cache-v1';
+const CACHE_NAME = 'kb-cache-v2';
 
 // Static assets to pre-cache on install
 const STATIC_ASSETS = [

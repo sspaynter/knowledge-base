@@ -1,6 +1,6 @@
 {
   "name": "knowledge-base",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Knowledge Base web frontend — browse, search, and edit documentation from PostgreSQL",
   "main": "server.js",
   "scripts": {
