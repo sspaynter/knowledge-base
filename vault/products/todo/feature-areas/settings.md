@@ -118,7 +118,32 @@ To-Do → In Progress → Blocked → Done → Parked
 
 ---
 
-### 4. Profile
+### 4. Day reset time
+
+**Purpose:** Define when "today" ends and the carry-over logic runs. Default is midnight. Configurable for users who work late.
+
+**What Simon sees:**
+- A time picker labelled "Day resets at" with default value 00:00
+- A helper line: "Tasks not completed before this time will appear as carry-over tomorrow."
+- Save button (or auto-save on change)
+
+**How it works (technical):**
+- Stored as `day_reset_time` (TIME) on the user preferences record
+- Default: `00:00`
+- On first load of ToDo after the reset time on a new calendar day, the carry-over prompt is generated
+- "First load" = the first session load where `now > reset_time` on a date after the last known active date
+- No cron job required — evaluated on page load
+
+**Screen states:**
+| State | What Simon sees |
+|---|---|
+| Default (not changed) | 00:00 shown; helper text visible |
+| Changed | New time shown; save confirms |
+| Save failed | Inline error: "Could not save preference — try again" |
+
+---
+
+### 5. Profile
 
 **Purpose:** View and manage account information.
 
@@ -151,6 +176,7 @@ To-Do → In Progress → Blocked → Done → Parked
 | Tags are global, not per-container | Global | Keeps the tagging vocabulary consistent. Per-container tags create fragmentation and management overhead. |
 | "Done" and "To-Do" protected | Cannot delete | System logic (Today committed list, task completion) references these status names. Deleting them breaks core features. |
 | Per-container status overrides are v2 | Global defaults in v1 | Data model supports it (container_id column on statuses). Zero development cost to enable later. |
+| Day reset time default is midnight | 00:00 | Most users expect a new day at midnight. Configurable to 05:00 or similar for late workers. No cron job — evaluated on page load. |
 
 ---
 
