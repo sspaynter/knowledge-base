@@ -12,7 +12,7 @@ updated: 2026-03-05
 **Type:** Feature area specification
 **Workspace:** Products
 **Section:** ToDo / Feature Areas
-**Stories:** S-T01–T08 (v1), S-T04, S-T05, S-T09 (v2) — see `todo-story-map.md`
+**Stories:** S-T01–T03, T06–T08, T10 (v1), S-T04, S-T05, S-T09 (v2) — see `todo-story-map.md`
 **Opportunities addressed:** OPP-02 (Today is never realistic), OPP-04 (partial — quick-add routing)
 **Status:** Gate 3 prototype complete — ready for Gate 4 build
 **Created:** 2026-03-04 (session 36)
@@ -103,6 +103,18 @@ THEN the section collapses and the label returns to "Show all tasks"
 
 ---
 
+### S-T10 — Blocked task count
+
+WHEN any task across all containers has Blocked status
+THEN Today shows a count below the stats bar: "X tasks blocked — review →"
+AND clicking the link opens All Tasks with the Blocked filter pre-applied
+AND when no tasks are blocked, the count line is hidden entirely
+
+**Why this belongs on Today:**
+Today is Simon's orientation screen. Blocked tasks represent work that cannot progress without action — they need to surface in his morning orientation, not only when he navigates to All Tasks. The count is a lightweight indicator (not an alert bar like over-commitment) because blocked tasks are not necessarily urgent — they need acknowledgement, not immediate resolution.
+
+---
+
 ### S-P01 — Request daily plan (Plan My Day — scoped to Today)
 
 WHEN Simon clicks the "Plan my day" button
@@ -111,6 +123,8 @@ AND the panel shows a header "What should you work on today?" with an "AI sugges
 AND a context line explains the basis: "Based on your Xh available, Y carryover items, project priorities, and personal tasks"
 AND between 2 and 6 tasks are ranked, each showing: task title, reasoning text, time estimate chip, status badge, project/personal group tag
 AND tasks from both projects and personal groups are eligible for ranking — personal tasks are not filtered out or treated as secondary
+AND tasks with Blocked status are included in the ranked list with a Blocked badge visible on the task row
+AND Simon can deselect a Blocked task from the plan if he chooses not to address the blocker today
 AND tasks that fit within available time are pre-selected (highlighted)
 AND tasks outside available capacity are shown deselected with a note
 AND Simon can override any selection before committing
@@ -155,6 +169,7 @@ THEN the panel closes without any changes applied to Today's task list
 | State | Trigger | What Simon sees |
 |---|---|---|
 | Normal | Committed ≤ available | Stats bar in neutral colours. No warning. |
+| Blocked tasks exist | Any task has Blocked status | Blocked count shown below stats bar: "X tasks blocked — review →" |
 | Over-committed | Committed > available | Amber warning bar with delta + "Adjust plan" button. |
 | Carry-over pending | Incomplete tasks from yesterday exist | Carry-over prompt above task list. |
 | Plan panel open | "Plan my day" clicked | AI panel expanded above task list. |

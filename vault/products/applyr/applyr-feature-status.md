@@ -5,7 +5,7 @@
 **Section:** Applyr
 **Status:** Active — updated each build session
 **Created:** 2026-03-03
-**Updated:** 2026-03-05 (after Phase 5b.8-5b.9 + 5b.16, session 47)
+**Updated:** 2026-03-05 (after Phase 5b.15, session 49)
 **Author:** Simon Paynter + Claude
 
 ---
@@ -29,7 +29,7 @@ Implementation plan: `applyr/docs/plans/2026-03-02-applyr-implementation-plan.md
 | Job detail — Overview tab | Live | Score Breakdown (left), Key Details + Notes + Status (right), 20px gap. Column order swapped session 46 |
 | Job detail — Research tab | Live | All 7 sections rendered. Lucide icons. Generate + regenerate buttons. User notes auto-save |
 | Job detail — Cover Letter tab | Live | Version selector, inline annotation (text select → feedback popup), general feedback, rewrite, approve |
-| Job detail — Resume tab | Live | Track label pill + ATS pill badge (header), hint text, inline resume body with change highlights (yellow=modified, red=removed), text selection → feedback panel (mirrors CL pattern), tailoring summary card with type-badged changes, Suggested Additions section, Regenerate + Approve buttons. Body renders as plain text — structured formatting tracked as 5b.15 |
+| Job detail — Resume tab | Live | Track label pill + ATS pill badge (header), hint text, inline resume body with markdown-parsed structure (h2/h3 headings, bullet lists, paragraphs) and change highlights (yellow=modified, red=removed), text selection → feedback panel (mirrors CL pattern), tailoring summary card with type-badged changes, Suggested Additions section, Regenerate + Approve buttons. Extraction prompt returns markdown-formatted raw_text (session 49). Next: inline green additions, dual ATS score, mammoth HTML (plan `mutable-crunching-pony.md`) |
 | Job detail — Back button | Live | "← Back to Pipeline" arrow-left button at top of detail view (session 47) |
 | Job detail — Application tab | Live | Readiness checklist (4 items), question list, AI-generated answers, Mark as Applied flow, context panel swaps to action panel |
 | Status lifecycle (11 states) | Live | Full transition matrix enforced on both backend and frontend |
@@ -118,7 +118,7 @@ These are things where what was built diverged from what was originally designed
 | Cover letter inline feedback | Described in prototype | Fully ported — text selection popup → comment card → compiled into rewrite prompt | Prototype design confirmed during build |
 | Resume tab — flat changes list | Phase 4 design | Initially built as flat changes list; rebuilt in session 41 as inline resume doc with highlights | Prototype had inline doc view but spec reference was missing from plan task — revealed process gap |
 | Resume tab — ATS score display | Large 3rem standalone card | Small pill badge in header row alongside track label | Prototype spec; the large display wasted vertical space |
-| Resume body formatting | Structured HTML (h2, h3, ul/li) per prototype | Plain text lines only — extraction returns "plain readable text" | Extraction prompt needs markdown output; tracked as 5b.15 |
+| Resume body formatting | Structured HTML (h2, h3, ul/li) per prototype | Markdown-parsed structure (h2, h3, ul/li, paragraphs) — extraction prompt returns markdown raw_text, frontend parses to DOM | Built in session 49 (5b.15). Next: mammoth HTML for richer DOCX formatting |
 | No innerHTML | Not in design spec | Hard constraint added during security hardening (Phase 2) | Security — enforced by Claude Code hook |
 
 ---
@@ -141,6 +141,7 @@ These are things where what was built diverged from what was originally designed
 | 45 | 5b | Tasks 5b.1-5b.3: Home spacing fix (content-body wrapper), review detail left panel rebuilt (score badge, meta, score breakdown bars), review list mode reworked (vertical summary cards with colored borders). Commit efd5f58. |
 | 46 | 5b | Tasks 5b.4-5b.7: Track allocation dropdown in review detail, kanban dot headers, pipeline filter pills + subtitle across all views, overview column swap. Commit f116f75. |
 | 47 | 5b | Tasks 5b.8, 5b.9, 5b.16: Resume tab layout (pill ATS badge, track label, hint, tailoring summary), inline resume commenting (shared context-aware popup), back button. New task 5b.15 created (resume body formatting). Session plan expanded to 7 sessions. Commits 5347fa5, 8307bd3. |
+| 49 | 5b | Task 5b.15: Resume body markdown formatting. Extraction prompt returns markdown raw_text, frontend parser creates h2/h3/ul-li/div DOM elements with inline highlights. Plan written for next session: inline green additions, dual ATS, mammoth HTML. Commit 11ab58f. |
 
 ---
 

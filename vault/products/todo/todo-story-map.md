@@ -37,11 +37,11 @@ updated: 2026-03-04
 
 ```mermaid
 flowchart LR
-    A["1. Start my day\nToday screen\n6 v1 stories"]:::act
+    A["1. Start my day\nToday screen\n7 v1 stories"]:::act
     B["2. Capture ideas\nCmd+K · Slack\n4 v1 stories"]:::act
     C["3. Process intake\nInbox review\n10 v1 stories"]:::act
     D["4. Plan and prioritise\nPlan My Day · Backlog\n8 v1 stories"]:::act
-    E["5. Execute work\nTask mgmt · Claude API\n6 v1 stories"]:::act
+    E["5. Execute work\nTask mgmt · Claude API\n7 v1 stories"]:::act
     F["6. Manage projects\nBoard · Personal · All Tasks\n9 v1 stories"]:::act
     G["7. Review and reflect\nProject status\n2 v1 stories"]:::act
 
@@ -50,7 +50,7 @@ flowchart LR
     classDef act fill:#0d3d2e,stroke:#10b981,color:#e2e8f0
 ```
 
-**45 v1 stories across 7 activities.** Full traceability (story → feature spec → build task → status) in `todo-feature-status.md`.
+**47 v1 stories across 7 activities.** Full traceability (story → feature spec → build task → status) in `todo-feature-status.md`.
 
 ---
 
@@ -116,6 +116,12 @@ WHEN Simon clicks the "Show all tasks" bar at the bottom of Today
 THEN a section expands showing all tasks across all projects grouped by project
 AND each group shows a project badge and task list with status and estimate
 AND clicking the bar again collapses the section
+
+**S-T10** — Blocked task count
+WHEN any task across all containers has Blocked status
+THEN Today shows a blocked count below the stats bar: "X tasks blocked — review →"
+AND clicking the link opens All Tasks with the Blocked filter pre-applied
+AND when no tasks are blocked, the count line is hidden entirely
 
 **v2 stories:**
 
@@ -285,6 +291,8 @@ THEN Claude generates a ranked list of tasks based on available time, project pr
 AND the panel shows between 2–6 tasks with reasoning text per task
 AND tasks that fit within available time are pre-selected
 AND tasks outside available capacity are shown greyed with "suggest for tomorrow" note
+AND tasks with Blocked status are included in the ranked list with a Blocked badge visible on the task row
+AND Simon can deselect a Blocked task from the plan if he chooses not to address the blocker today
 AND Simon can override any ranking decision before committing
 
 **S-P02** — Commit to plan
@@ -375,12 +383,13 @@ WHEN Simon sets a task status to Blocked
 THEN the task shows a Blocked badge
 AND the task is surfaced in the All Tasks "Blocked" filter view
 
-**v2 stories:**
-
 **S-E04** — Note a blocker
 WHEN Simon marks a task Blocked
-THEN he can add a note explaining the dependency or blocker
-AND the note is visible in the task detail and the AI summary
+THEN he can add a short note explaining the dependency or blocker
+AND the note is visible in the task detail panel alongside the Blocked badge
+AND the note is included in the AI summary context for Plan My Day
+
+**v2 stories:**
 
 ---
 
@@ -552,7 +561,7 @@ Everything above this line ships in v1. Stories below are v2+.
 | Capture ideas | Cmd+K quick add, Slack auto-ingest, mobile capture |
 | Process intake | Inbox Pending Review (view / accept / edit / reject / bulk), Raw Capture tab with AI processing, inline text annotation (feedback loop) |
 | Plan and prioritise | Plan My Day AI panel (commit + manual override), Backlog pipeline (Raw → Refined → Ready), AI refinement panel with iteration, priority assignment |
-| Execute work | Task status management, task completion, Claude session context load, auto task update from session |
+| Execute work | Task status management (including Blocked status + blocker note), task completion, Claude session context load, auto task update from session |
 | Manage projects | Projects board (Next + Active + Parked), task detail panel, new project creation, Personal groups (5 default), All Tasks with filter chips |
 | Review and reflect | Project detail header with progress, list/kanban toggle |
 
@@ -570,7 +579,6 @@ Everything above this line ships in v1. Stories below are v2+.
 | S-P04 Re-plan mid-day | Nice-to-have; Plan once per day is v1 |
 | S-P10 Promote Ready item to board | Manual flow acceptable in v1 |
 | S-P11 Bulk pipeline management | Not needed at low backlog volumes |
-| S-E04 Note a blocker | Status chip sufficient for v1 |
 | S-E08 Session summary | Activity log captures this partially |
 | S-M06 Project priority drag-to-reorder | New project order is creation order in v1 |
 | S-M07 AI project summary | Requires activity log to accumulate data |
@@ -589,14 +597,21 @@ Mobile native app, GitHub Issues sync, recurring tasks, time tracking, Slack/ema
 
 | Activity | v1 stories | v2 stories |
 |---|---|---|
-| Start my day | 8 (S-T01–T08) | 2 |
-| Capture ideas | 5 (S-C01–C05) | 1 |
-| Process intake | 8 (S-I01–I11 minus I12) | 1 |
-| Plan and prioritise | 9 (S-P01–P09) | 2 |
-| Execute work | 7 (S-E01–E07) | 1 |
-| Manage projects | 9 (S-M01–M09, M11–M12) | 4 |
-| Review and reflect | 2 (S-R01–R02) | 2 |
-| **Total** | **48** | **13** |
+| Start my day | 7 (S-T01–T03, T06–T08, T10) | 3 (T04, T05, T09) |
+| Capture ideas | 4 (S-C01, C02, C04, C05) | 2 (C03, C06) |
+| Process intake | 10 (S-I01–I05, I07–I11) | 2 (I06, I12) |
+| Plan and prioritise | 8 (S-P01–P03, P05–P09) | 3 (P04, P10, P11) |
+| Execute work | 7 (S-E01–E07) | 1 (E08) |
+| Manage projects | 9 (S-M01–M05, M08–M09, M11–M12) | 4 (M06, M07, M10, M13) |
+| Review and reflect | 2 (S-R01–R02) | 2 (R03, R04) |
+| **Total** | **47** | **17** |
+
+**Story count maintenance process:**
+The count table above must be updated whenever a story is added, moved between v1 and v2, or removed. This is an end-of-session PM task — do not leave the session without verifying the count matches the actual story list.
+
+To verify: count v1 stories in each activity section above (count only stories listed before the `**v2 stories:**` divider) and compare against the table. Update the table and the backbone mermaid if they differ.
+
+The total count is also referenced in the backbone narrative ("XX v1 stories across 7 activities"). Update all three locations together.
 
 ---
 

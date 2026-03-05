@@ -118,33 +118,40 @@ All new capability follows the same pipeline:
 
 ## Future State
 
-### Ambient Layer — OpenClaw on Mac Studio
+### Ambient Layer — Development Platform on Mac Studio
 
 The current setup requires sitting at a machine with Claude Code running.
-The gap is ambient, always-on access — the ability to give instructions
-from anywhere and get things done without opening a development session.
+The gap is ambient, always-on access — the ability to define tasks from
+anywhere and get things done without manually managing development sessions.
 
-OpenClaw (https://openclaw.ai) fills this gap. It is a locally-hosted,
-persistent AI agent that connects to Slack. It runs on the Mac Studio, has
-access to local tools, files, and shell execution, and can call out to
-Claude or local models depending on task type.
+The **SS42 Development Platform** fills this gap. It is a Node.js server
+running on the Mac Studio that spawns Claude Code workers (`claude -p`)
+with guardrails. It replaces the OpenClaw concept with a solution built
+entirely on Claude Code's native capabilities — no third-party agent
+framework needed.
 
-Slack is the chosen interface — accessible from any device, keeps
-professional comms separated, and scales if others are brought in.
+**Key components:**
 
-**Planned role of OpenClaw:**
-
-| Function | How |
+| Component | What it does |
 |---|---|
-| Command interface | Slack — accessible from any device, anywhere |
-| Ambient tasks | Proactive reminders, scheduled checks, background monitoring |
-| Local execution | Run test suites, patch scripts, Patch Tuesday operations |
-| n8n bridge | Call n8n webhooks for structured workflow steps |
-| Model routing | Local models (Ollama) for fast/cheap tasks, Claude API for complex reasoning |
+| Dev Server | Always-on Node.js process on Mac Studio. Accepts tasks, spawns workers, collects results, serves dashboard. |
+| Workers | `claude -p` child processes with restricted tools, budget caps, turn limits. Each operates on an isolated git branch. |
+| Dashboard | Web UI accessible from any device on LAN. Task submission, result review, gate management. |
+| ToDo integration | Tasks flow from ToDo app (NAS) to Dev Server. Results flow back. |
 
-**What stays with Claude Code:** All active development, architecture, complex
-build sessions. OpenClaw is the operator layer; Claude Code is the builder
-layer.
+**Four worker types:**
+
+| Worker | Purpose |
+|---|---|
+| Researcher | Read-only analysis |
+| Designer | Creates design artifacts (problem statements, PRDs, user flows, prototypes) |
+| Builder | Implements code changes on isolated branches |
+| Reviewer | Runs tests and reviews code quality |
+
+**No API key required.** Workers use the Max plan via `claude -p` — same
+subscription as interactive sessions.
+
+**Full documentation:** `products/development-platform/overview.md`
 
 ### Session Orchestration — ToDo as Task Queue
 
@@ -172,32 +179,32 @@ The fix has two layers:
 - ToDo spec: `products/todo/orchestration-layer.md`
 - Writing-plans upgrade: `operations/engineering-practice/writing-plans-upgrade.md`
 
-### n8n + OpenClaw Integration
+### n8n + Dev Server Integration
 
 n8n handles structured, deterministic data flows. For steps that require
-local tool access or local execution, OpenClaw acts as an agent within the
-workflow:
+local tool access or AI-driven execution, n8n triggers the Dev Server:
 
 ```
 n8n workflow
-  → step requires local execution
-  → HTTP POST to OpenClaw
-  → OpenClaw executes locally (runs script, checks system, reads file)
-  → returns result to n8n via webhook callback
+  → step requires AI execution
+  → HTTP POST to Dev Server (Mac Studio, LAN)
+  → Dev Server spawns claude -p worker with guardrails
+  → worker executes, result collected
+  → Dev Server returns result via callback
   → workflow continues
 ```
 
-n8n's native AI Agent node handles pure reasoning steps. OpenClaw handles
-steps that need local access or ambient context.
+This replaces the original OpenClaw integration pattern with the same
+data flow, using Claude Code workers instead of a separate agent framework.
 
 ### Model Routing Strategy
 
 | Task type | Model |
 |---|---|
-| Quick commands, routing, scheduling | Local — Ollama on Mac Studio (fast, free, low stakes) |
-| Code generation, architecture, complex reasoning | Claude Sonnet via API |
-| Writing, cover letters, strategic output | Claude Sonnet via API |
-| Classification, triage | Claude Haiku via API |
+| Code generation, architecture, complex reasoning | Claude Sonnet (via `claude -p`, Max plan) |
+| Writing, cover letters, strategic output | Claude Sonnet (via `claude -p`, Max plan) |
+| Read-only analysis, research | Claude Haiku (via `claude -p`, Max plan) |
+| Classification, triage (n8n pipeline) | Claude Haiku (via API, n8n HTTP nodes) |
 | File ops, calendar, simple lookups | Rule-based — no model needed |
 
 ### Client Delivery — AWS Infrastructure
@@ -219,19 +226,20 @@ deployment template — ECS/Fargate, RDS, Secrets Manager, Cloudflare in front
 ## Architecture Summary
 
 ```
-Interface layer     Slack (via OpenClaw) — any device, anywhere
+Interface layer     Dashboard (LAN browser) + ToDo (any device)
                               ↓
-Agent layer         OpenClaw (Mac Studio, always-on, local models)
+Agent layer         Dev Server (Mac Studio, always-on, Claude Code workers)
                               ↓
-Execution layer     n8n workflows + Claude Code skills + app APIs
+Execution layer     n8n workflows + Claude Code workers + app APIs
                               ↓
-Data layer          PostgreSQL + KB vault + Applyr database
+Data layer          PostgreSQL + KB vault + Applyr database + SQLite (Dev Server)
                               ↓
-Hosting layer       NAS (personal) / AWS (client, future)
+Hosting layer       NAS (personal) / Mac Studio (dev) / AWS (client, future)
 
 External access     Cloudflare Tunnel → *.ss-42.com
 Auth                Google OAuth → shared_auth schema → all apps
 CI/CD               GitHub → GHCR → Watchtower (NAS) / ECS deploy (AWS future)
+Dev workers         claude -p on Max plan (no API key)
 ```
 
 ---
@@ -241,7 +249,7 @@ CI/CD               GitHub → GHCR → Watchtower (NAS) / ECS deploy (AWS futur
 | Gap | Status |
 |---|---|
 | Session overhead across builds | Spec-first handoff active; ToDo orchestration planned (v4.0.0) |
-| No mobile/ambient access | OpenClaw + Slack — planned, not yet deployed |
+| No mobile/ambient access | Dev Server dashboard (LAN) + ToDo on phone — planned, not yet deployed |
 | No centralised logging across containers | Not yet designed |
 | KB production still on username/password auth | Pending migration |
 | Applyr production container not yet created | Pending |
