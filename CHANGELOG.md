@@ -5,6 +5,15 @@ All notable changes to the Knowledge Base project will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-03-05
+
+### Fixed
+- Sidebar page hierarchy — `getPageTree()` returns flat array matching client's recursive `renderPageTree()` pattern; child pages now visible at correct indented depth (#46)
+- SESSION_SECRET aligned across staging and production containers — resolves intermittent auth overlay popups when both tabs are open (#47)
+
+### Removed
+- `buildTree()` helper function in `services/pages.js` — dead code that conflicted with client-side tree rendering
+
 ## [2.1.0] - 2026-03-05
 
 ### Added
