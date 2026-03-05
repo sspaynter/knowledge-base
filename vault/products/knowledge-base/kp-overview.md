@@ -55,52 +55,39 @@ Twelve interconnected problems drove this:
 
 ## Current state
 
-**Version:** v2.0.0-dev — Phases 1–5 complete on `dev` branch, staging at `kb-staging.ss-42.com`
-**Production:** v1.0.0 still live at `kb.ss-42.com` (pending Phase 6 production deploy)
+**Version:** v2.1.1 — live at `kb.ss-42.com`
+**Staging:** `kb-staging.ss-42.com`
+**Released:** 2026-03-05
 
-**v1.0.0 completed:**
-- All 5 phases, 30 tasks — database, backend, frontend, deployment wiring
-- 12-table PostgreSQL schema in `knowledge_base` on `n8n-postgres`
-- Full REST API with auth, workspaces, pages, assets, search, upload, admin
-- Three-column Confluence-style frontend with editor, search, map view, settings
-- Deployed to NAS — `kb.ss-42.com` via Cloudflare tunnel + Google OAuth
-- Admin account created, registration locked
-
-**v2.0.0 in progress (supersedes v1.1.0):**
-
-*Phase 1 (session 28):* Vault sync engine, chokidar watcher, three-layer content fallback, Mermaid.js rendering, Plus Jakarta Sans + indigo visual redesign, staging deployed.
-
-*Phase 2 (session 30):* Vault-first write paths (createPage/updatePage/movePage write .md files), page_versions table (50-version history, restore endpoint), editor toolbar (bold/italic/heading/link/code/list), split/source-only mode toggle, Mermaid live preview in editor pane, 7 diagram templates with Insert Diagram picker, click-to-edit Mermaid in reading view (inline editor panel, live preview, writes back to page content). Google OAuth SSO cross-app verified: sign into KB → Applyr authenticated (shared `.ss-42.com` cookie).
-
-*Phase 3 (session 31):* App rail (static SS42 switcher), workspace navigation strip (collapsible, 152px), three-breakpoint responsive CSS (desktop 1024px+, tablet 768–1023px, mobile <768px), sidebar becomes slide-out drawer on mobile with backdrop, hamburger button, workspace dropdown on tablet, topbar page title on mobile, workspace strip collapse persisted to localStorage. Rail later refactored to two-tier (see Phase 4).
-
-*Phase 4 (session 32):* "42" logo removed from rail, replaced with `book-open` Lucide icon in topbar left (desktop only). PWA manifest (`/manifest.json`) + KB SVG icon (`/icons/kb-icon.svg`). Service worker (`/sw.js`): cache-first for static assets, network-first for API, offline fallback page. Search result breadcrumb fix (workspace › section now shown for page results). Diagram toolbar wired: Copy SVG (clipboard), Download PNG (2× canvas). Dark/light mode: `prefers-color-scheme` used for initial theme when no saved preference; Mermaid diagrams re-render with correct theme on toggle via `reinitMermaid()`. Rail refactored to two-tier: CORE_APPS (Knowledge Base active + To Do) above divider, BUILT_APPS (Applyr) below. "Lifeboard" renamed to "To Do" throughout. Projects placeholder removed.
-
-*Phase 5 (session 33):* Migration script (`scripts/migrate-v2.js` — idempotent vault sync, DB export, search_vector refresh). Inbox endpoint (`POST /api/inbox` — auto-title, finds/creates personal/inbox section). Asset browser view (asset grid with type filter, detail panel with linked pages). Page status filtering in sidebar (Drafts and Archived toggles, client-side visibility). Map view Mermaid diagram toggle (Table/Diagram mode, generates flowchart from relationship data via Mermaid.js).
-
-*Phase 6:* PENDING — see implementation plan for details.
-
-**v2.0.0 design goals:**
-- Vault-as-source architecture — markdown files are source of truth, DB for metadata/search/relationships
-- Visual redesign aligned to Applyr aesthetic (Plus Jakarta Sans, indigo accent, gradient sidebar)
+**Architecture:**
+- Vault-as-source — markdown files are source of truth, DB for metadata/search/relationships
+- Three-layer content fallback: vault file → content_cache → DB content column
+- chokidar v5 file watcher for Obsidian/VS Code/Claude sync
+- API-first vault sync via `kb-sync.sh` (push) and `kb-pull.sh` (pull)
+- Visual design aligned to Applyr aesthetic (Plus Jakarta Sans, indigo accent, gradient sidebar)
 - Responsive layout (desktop 3-col, tablet 2-col, mobile drawer)
 - PWA for add-to-home-screen on iOS/iPad
-- chokidar file watcher for Obsidian/VS Code/Claude sync
-- Asset browser and page status filtering (from v1.1.0 scope)
-- 11 confirmed outcomes including PM lifecycle documentation and multi-device editing
-- Design spec: `docs/plans/2026-03-02-knowledge-base-v2-design.md`
-- Clickable prototype approved: `prototype-kb-v2.html`
-  - SS42 Hub integration (rail as app switcher, HQ launcher overlay)
-  - OneNote-style collapsible workspace strip (separate column between rail and sidebar)
-  - WYSIWYG editor with floating toolbar and Source toggle (replaces split markdown/preview)
-  - Dark/light mode toggle
-  - Responsive: desktop 4-column, tablet/mobile with drawer and workspace dropdown
+- No innerHTML — DOM APIs only (DOMParser for markdown rendering)
+
+**Key capabilities:**
+- Workspace/section/page hierarchy with drag-to-reorder
+- Markdown editor with toolbar (bold/italic/heading/link/code/list), split/source mode
+- Mermaid.js diagramming with click-to-edit, live preview, 7 templates, SVG/PNG export
+- Full-text search across all content
+- Asset browser with type filter and linked pages
+- Page versioning (50-version history with restore)
+- Dark/light mode with Mermaid theme sync
+- App rail (SS42 switcher: KB, To Do, Applyr)
+- Google OAuth SSO shared across SS42 apps (`.ss-42.com` cookie domain)
+- API token auth for Claude/automation access
+- Cloudflare Access bypass for `/api/*` paths
+
+**Release history:** See `products/knowledge-base/releases/` for per-version notes.
 
 **Plans:**
 - `docs/plans/2026-02-27-knowledge-platform-implementation-plan.md` — v1.0 build (30 tasks, completed)
 - `docs/plans/2026-03-02-knowledge-base-v2-design.md` — v2.0 design spec (approved)
-- `docs/plans/2026-02-27-v1.1.0-implementation.md` — SUPERSEDED by v2.0
-- `docs/plans/2026-02-27-lifecycle-pattern-design.md` — lifecycle design (standalone, still valid)
+- `docs/plans/2026-03-04-getpagetree-hierarchy-fix.md` — v2.1.1 bug fix plan
 
 ## Related projects
 

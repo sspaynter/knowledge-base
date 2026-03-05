@@ -180,7 +180,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Migration script tests | Live | 20 tests: schema idempotency, seed idempotency, GENERATED ALWAYS AS behaviour, helper functions |
 | npm test CI gate | Live | GitHub Actions: test job (Postgres service) gates build job — fail fast on test failures |
 | .dockerignore | Live | Excludes node_modules, tests, vault, docs from build context |
-| Production deploy | Live | v2.0.0 deployed to kb.ss-42.com — session 37 |
+| Production deploy | Live | v2.1.1 deployed to kb.ss-42.com — latest: session 50 |
 
 ---
 
@@ -211,6 +211,8 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | 39 | — | Skill asset registration: 50 assets (20 global skills, 5 agents, 14 superpowers, 9 job-app skills, 2 job-app agents) + 34 relationships registered via `scripts/register-skills.js`. Map view populated. TODO #32 completed. |
 | 40 | #35 + #36 | Frontmatter metadata parsing (js-yaml, 7 field mappings, round-trip writes) + gapped sort_order (seed 10/20/30, vault sync MAX+10, archived status migration). 27 new tests (22 unit + 5 integration). New file: `services/frontmatter.js`. |
 | 40 | #13 + UI | Drag-to-reorder: native HTML5 DnD in sidebar, PATCH /api/pages/reorder bulk endpoint (transactional), vault frontmatter updated on reorder, 4 new API tests. Version number in rail UI. package.json → 2.0.0. Global CLAUDE.md vault writing instructions added. |
+| 48 | v2.1.0 | API-first vault sync (POST /api/pages/by-path, GET /api/pages/export), kb-sync.sh/kb-pull.sh scripts, LAN auto-detection, CF Access bypass for /api/*, 134 tests (18 suites). |
+| 50 | v2.1.1 | getPageTree flat array fix (#46) — sidebar renders nested pages correctly. SESSION_SECRET aligned across staging and production (#47). |
 
 ---
 

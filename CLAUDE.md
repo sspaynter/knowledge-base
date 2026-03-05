@@ -6,7 +6,7 @@ A self-hosted knowledge platform — personal second brain with a human-first au
 
 Content spans all domains: work, personal, IT infrastructure, projects, business, learning. Anything worth remembering lives here.
 
-**Current version:** v1.0 — all code complete, ready for NAS deployment
+**Current version:** v2.1.1 — live at `kb.ss-42.com`
 **Owner:** Simon Paynter (paynter.simon@gmail.com, GitHub: sspaynter)
 **Public URL:** `kb.ss-42.com` (Cloudflare tunnel — pending container creation)
 
