@@ -144,6 +144,15 @@ After scaffolding, run `npm install`, then:
 | `infra-context` | Stack and deployment awareness |
 | `nas-ops` | QNAP NAS container operations, network config |
 
+## On-Demand Skills (loaded when needed)
+
+| Skill | Purpose | Loaded by |
+|---|---|---|
+| `anti-slop` | Strip AI writing patterns from prose — banned phrases, structural patterns, jargon replacements, scoring framework | cover-letter, blog-workshop, job-followup, any prose-producing agent |
+| `lifecycle-release` | Full release pipeline — pre-flight to post-release verification | Development Pipeline step 6 |
+
+See [anti-slop skill reference](skills/anti-slop.md) and [lifecycle:release skill reference](skills/lifecycle-release.md) for detail.
+
 ---
 
 ## Why This Setup Exists

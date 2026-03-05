@@ -1,7 +1,15 @@
+---
+title: ToDo — Overview
+order: 10
+status: published
+author: claude
+created: 2026-03-04
+updated: 2026-03-04
+---
 # ToDo — Project Overview
 
 **Formerly:** Lifeboard
-**Status:** Gate 3 IN PROGRESS — prototype building
+**Status:** Gate 3 COMPLETE — Gate 4 pre-work COMPLETE — Gate 4 (build) next
 **Replaces:** Trello
 **Current deployed version:** v3.2 (Lifeboard — Kanban board, pre-redesign. Will be retired when ToDo v1 ships.)
 
@@ -13,13 +21,34 @@ ToDo is a personal work management platform with an AI intake layer. It is the s
 
 ---
 
-## Design documents
+## PM documentation (vault — primary reference)
+
+| Document | Path | What it is |
+|---|---|---|
+| **Opportunity Backlog** | `vault/products/todo/todo-opportunity-backlog.md` | 10 problems worth solving, outcome framing, priority, traceability to failure points |
+| **User Story Map** | `vault/products/todo/todo-story-map.md` | Full backbone → features → 48 v1 stories + 13 v2 stories. v1/v2 cut line. Traceability to feature area docs. |
+| **Feature area — Today** | `vault/products/todo/feature-areas/today.md` | Stories S-T01–T08, ACs, AI risk assessment, screen states, prototype reference, v2 backlog |
+| **Feature area — Inbox** | `vault/products/todo/feature-areas/inbox.md` | Stories S-C01–C05, S-I01–I11. Pending Review tab, Raw Capture tab, Slack auto-ingest, AI processing, inline annotation |
+| **Feature area — Projects** | `vault/products/todo/feature-areas/projects.md` | Stories S-M01–M05 (board), S-P05–P09 (backlog pipeline), S-R01–R02 (review). Onboarding included. |
+| **Feature area — All Tasks** | `vault/products/todo/feature-areas/all-tasks.md` | Stories S-M11–M12 (v1), S-M13 (v2). Cross-project grouped view, filter chips |
+| **Feature area — Personal** | `vault/products/todo/feature-areas/personal.md` | Stories S-M08–M09 (v1), S-M10 (v2). 5 default groups, same task model as projects |
+| **Feature area — AI Layer** | `vault/products/todo/feature-areas/ai-layer.md` | Stories S-E05–E07, S-I09–I11. Prompt architecture, feedback_log, Claude session integration |
+| **Feature area — Settings** | `vault/products/todo/feature-areas/settings.md` | Google Calendar OAuth, Statuses management, Tags management, Profile |
+| **Feature area — Item Types** | `vault/products/todo/feature-areas/item-types.md` | Task vs Idea distinction, where each appears, Idea breakdown flow |
+| **User journey — Daily routine** | `vault/products/todo/user-journeys/daily-routine.md` | Morning → Plan My Day → task execution → end of day. 7-step flow with failure modes. |
+| **User journey — Brain dump to task** | `vault/products/todo/user-journeys/brain-dump-to-task.md` | Three capture paths: Cmd+K direct, Slack auto-ingest, Raw→Inbox→Backlog pipeline |
+| **Workflow — Slack ingest** | `vault/products/todo/workflows/slack-ingest.md` | #todo-inbox → n8n webhook → /api/v1/inbox/ingest → AI → Pending Review. Multi-channel design under review. |
+| **Workflow — AI processing** | `vault/products/todo/workflows/ai-processing.md` | All 5 AI uses mapped (Inbox intake, Backlog refinement, Plan My Day, Idea breakdown, Session tasks) |
+| **Workflow — Session integration** | `vault/products/todo/workflows/session-integration.md` | Claude Code → /api/v1/claude/* (3 endpoints). Session start, task update, brain dump flows. |
+| **Feature status tracker** | `vault/products/todo/todo-feature-status.md` | Gate 3 prototype status, Gate 4+ build status, session log |
+
+## Design documents (engineering reference)
 
 | Document | Path |
 |---|---|
-| Problem statement | `lifeboard/docs/plans/2026-03-02-problem-statement.md` |
-| Gate 2 design (COMPLETE) | `lifeboard/docs/plans/2026-03-02-todo-design.md` |
-| Design spec (decisions summary) | `lifeboard/docs/plans/2026-03-02-todo-DESIGN-SPEC.md` |
+| Problem statement | `todo/docs/plans/2026-03-02-problem-statement.md` |
+| Gate 2 design (COMPLETE) | `todo/docs/plans/2026-03-02-todo-design.md` |
+| Design spec (decisions summary) | `todo/docs/plans/2026-03-02-todo-DESIGN-SPEC.md` |
 
 ---
 
@@ -129,7 +158,9 @@ Global Quick Add: floating + button + Cmd+K command palette
 
 ## What is out of scope (v1)
 
-Mobile native app, GitHub sync, recurring tasks, time tracking, integrations beyond Google Calendar and Claude, multi-user dashboards, MCP server, offline/PWA, export, email notifications, file attachments, analytics.
+Mobile native app, GitHub sync, time tracking, integrations beyond Google Calendar and Claude, multi-user dashboards, MCP server, offline/PWA, export, email notifications, file attachments, analytics.
+
+**v2 backlog items (deferred from v1):** Recurring tasks and templates (swim, electricity bill with due dates), Slack multi-channel routing (channels mapping to different containers), reuse candidate detection in Backlog refinement, per-container status overrides, tag filtering in All Tasks, session summary auto-write to activity log, MCP server for richer session integration.
 
 ---
 
@@ -140,3 +171,5 @@ Mobile native app, GitHub sync, recurring tasks, time tracking, integrations bey
 | 2026-03-02 | 33 | Full redesign kicked off. Gate 0 (Framing) + Gate 1 (Problem space, 12 failure points) confirmed. Gate 2 Design sections 1–6 confirmed. Paused at Section 7 (Visual design). |
 | 2026-03-03 | 34 | Gate 2 complete. Sections 7–12 confirmed. Key decisions: PostgreSQL (not SQLite), Google OAuth via shared_auth schema, SSO across all SS42 apps. Ports 3335/3336 allocated. shared_auth Phase 1 confirmed complete. Started Gate 3 prototype — built 5 screens (Sign-in, Today, Inbox, Projects, Project Detail). |
 | 2026-03-03 | 35 | Gate 3 continued. Projects screen redesigned: left-to-right board (Next → Active), Parked collapsible below. Board/Backlog toggle added. Backlog pipeline built: Raw → Refined → Ready with full AI refinement panel (iteration loop, task breakdown, deps, reuse, priority picker). Backlog state definitions confirmed. Design spec updated with raw input channel and inline text feedback requirements. |
+| 2026-03-04 | 36 | Gate 3 complete. All 8 prototype screens done (Today plan panel + Show All toggle, Inbox raw processing flow, Backlog inline annotation, Raw channel demo modal, All Tasks, Personal). PM documentation layer established: Opportunity Backlog (10 opportunities), User Story Map (48 v1 + 13 v2 stories, 7-activity backbone), feature area spec for Today. Framework: SVPG / Cagan (opportunity backlog) + Jeff Patton (story mapping). |
+| 2026-03-04 | 37 | Gate 4 pre-work complete. All remaining feature area specs written (Inbox, Projects, All Tasks, Personal, AI Layer, Settings, Item Types). Two user journeys written (Daily routine, Brain dump to task). Three workflow documents written (Slack ingest, AI processing, Session integration). Gate 4 implementation plan written (15 tasks, 4 PRE infrastructure items, 8 sprints). Key decisions: personal tasks included in Plan My Day, reuse candidates deferred to v2, Slack multi-channel routing — design under review. |

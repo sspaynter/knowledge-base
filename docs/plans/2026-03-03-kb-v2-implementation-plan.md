@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-03
 **Design Spec:** `docs/plans/2026-03-02-knowledge-base-v2-design.md`
-**Status:** Phases 1–5 COMPLETE. Phase 6 tasks 6.1–6.6 COMPLETE. Task 6.7 (production deploy) PENDING staging verification.
+**Status:** ALL PHASES COMPLETE. v2.0.0 released 2026-03-04.
 
 ---
 
@@ -688,7 +688,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
 
 ---
 
-## Phase 6: Testing + Production Deploy — COMPLETED (tasks 6.1–6.6, session 36, 2026-03-03)
+## Phase 6: Testing + Production Deploy — COMPLETED (sessions 36–37, 2026-03-03 to 2026-03-04)
 
 **Deliverable:** Full test coverage for all new vault sync functionality. Updated Dockerfile and CI/CD pipeline. Production deployment at `kb.ss-42.com`. End-to-end verification.
 
@@ -711,6 +711,19 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
 - `search_vector` is GENERATED ALWAYS AS — can never be NULL, never manually set. Step C in migrate-v2.js is a safe no-op. Tests updated to verify this correctly.
 
 **Commit:** `1281cdd` feat: Phase 6 — tests, CI/CD, vault taxonomy restructure
+
+**Session 37 build log (Task 6.7 — Production Deploy, 2026-03-04):**
+- Dockerfile healthcheck fix: `localhost` → `127.0.0.1` (Alpine IPv6 resolution bug)
+- `scripts/run-migration.js` updated: runs incremental migrations from `scripts/migrations/*.sql` after base schema
+- `tests/nocodb-migration.test.js`: CI skip added (`process.env.CI === 'true'` → `test.skip`)
+- Merged dev → main, tagged v2.0.0, GitHub Release created
+- Production container recreated on NAS with vault bind mount (port 32781, bridge network)
+- Production vault rsynced from local Mac
+- DB cleanup: deleted `general` workspace (0 live pages), 16 orphaned inbox pages, orphaned `personal/inbox` section
+- Cloudflare tunnel updated: `kb.ss-42.com` → `http://192.168.86.18:32781` (was port 32779)
+- CHANGELOG.md created (Keep a Changelog format)
+- KB vault release page: `vault/products/knowledge-base/releases/v2.0.0.md`
+- Commits: `8334cae` (healthcheck fix), `8cbfcb4` (CI migration runner), `759a95e` (CHANGELOG), `88709ed` (release notes)
 
 ### Task 6.1: Vault sync unit tests — COMPLETED
 
@@ -769,7 +782,7 @@ All 5 tasks completed. Migration script, inbox endpoint, asset browser, page sta
   - WHEN dev branch is pushed THEN `:dev` image is built
   - WHEN main branch is pushed THEN `:latest` image is built
 
-### Task 6.7: Production deployment — PENDING (awaiting staging verification by Simon)
+### Task 6.7: Production deployment — COMPLETED (session 37, 2026-03-04)
 
 - spec: 2026-03-02-knowledge-base-v2-design.md § 13 — Deployment
 - files: (NAS infrastructure)

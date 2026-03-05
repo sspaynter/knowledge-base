@@ -146,6 +146,32 @@ professional comms separated, and scales if others are brought in.
 build sessions. OpenClaw is the operator layer; Claude Code is the builder
 layer.
 
+### Session Orchestration — ToDo as Task Queue
+
+The current Claude Code workflow requires manual session management: each
+session re-establishes context from memory files and plan documents. This
+creates overhead of 20-30 sessions per feature, with significant time spent
+on re-explanation rather than execution.
+
+The fix has two layers:
+
+1. **Spec-first session handoff** (active now) — plan files produce
+   build-ready tasks with five required fields (spec reference, file paths,
+   code examples, test command, acceptance criteria). Each session reads the
+   spec and executes one task. No exploration needed.
+
+2. **ToDo as orchestration layer** (planned, depends on ToDo v4.0.0) —
+   ToDo exposes a Claude API (`/api/v1/claude/*`) that sessions call to
+   claim tasks, report completion, and log session summaries. An MCP server
+   wraps these endpoints so Claude loads them as native tools. This replaces
+   manual plan-file tracking with a machine-readable task queue that includes
+   calendar awareness, dependency tracking, and AI-generated status summaries.
+
+**Docs:**
+- Workflow: `operations/engineering-practice/session-handoff-workflow.md`
+- ToDo spec: `products/todo/orchestration-layer.md`
+- Writing-plans upgrade: `operations/engineering-practice/writing-plans-upgrade.md`
+
 ### n8n + OpenClaw Integration
 
 n8n handles structured, deterministic data flows. For steps that require
@@ -214,6 +240,7 @@ CI/CD               GitHub → GHCR → Watchtower (NAS) / ECS deploy (AWS futur
 
 | Gap | Status |
 |---|---|
+| Session overhead across builds | Spec-first handoff active; ToDo orchestration planned (v4.0.0) |
 | No mobile/ambient access | OpenClaw + Slack — planned, not yet deployed |
 | No centralised logging across containers | Not yet designed |
 | KB production still on username/password auth | Pending migration |

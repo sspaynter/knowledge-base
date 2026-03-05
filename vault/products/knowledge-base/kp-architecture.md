@@ -6,7 +6,7 @@
 **Template:** blank
 **Status:** Active
 **Created:** 2026-02-27
-**Updated:** 2026-03-03 (v2.0 Phase 5 — all phases complete on dev branch)
+**Updated:** 2026-03-04 (v2.0.0 production release)
 **Author:** Simon Paynter + Claude
 
 ---

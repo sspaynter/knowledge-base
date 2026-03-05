@@ -6,3 +6,7 @@ uploads/
 KICKOFF-PROMPT.md
 coverage/
 vault/.obsidian/
+vault/.kb-last-pull
+vault/_sync-*/
+vault/_auto-*/
+vault/autows*/
