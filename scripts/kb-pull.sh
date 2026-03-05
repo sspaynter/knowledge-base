@@ -11,15 +11,35 @@
 
 set -euo pipefail
 
-KB_API_URL="${KB_API_URL:-https://kb.ss-42.com}"
+KB_LAN_URL="http://192.168.86.18:32781"
+KB_WAN_URL="https://kb.ss-42.com"
 KB_VAULT_DIR="${KB_VAULT_DIR:-$HOME/Documents/Claude/knowledge-base/vault}"
 LAST_PULL_FILE="$KB_VAULT_DIR/.kb-last-pull"
 LOG_FILE="$HOME/.kb-sync.log"
+
+# Auto-detect LAN: try local NAS with 1-second timeout, fall back to public URL
+resolve_api_url() {
+  if [ -n "${KB_API_URL:-}" ]; then
+    echo "$KB_API_URL"  # Explicit override — respect it
+  elif curl -s --connect-timeout 1 -o /dev/null "$KB_LAN_URL/api/version" 2>/dev/null; then
+    echo "$KB_LAN_URL"
+  else
+    echo "$KB_WAN_URL"
+  fi
+}
+KB_API_URL=$(resolve_api_url)
 
 log() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') $1" >> "$LOG_FILE"
   echo "$1"
 }
+
+# Log which route was chosen
+if [[ "$KB_API_URL" == *"192.168"* ]]; then
+  log "PULL: Using LAN ($KB_API_URL)"
+else
+  log "PULL: Using WAN ($KB_API_URL)"
+fi
 
 # Validate token
 if [ -z "${KB_API_TOKEN:-}" ]; then
