@@ -1,7 +1,7 @@
 # lifecycle:release — Skill Reference
 
 **Type:** Claude skill reference
-**Status:** Shipped — 2026-03-02
+**Status:** Shipped — 2026-03-02. Updated 2026-03-05 (step 12 added).
 **Skill location:** `~/.claude/skills/lifecycle-release/SKILL.md`
 **Design doc:** `vault/it-and-projects/claude/lifecycle-release-design.md`
 **MASTER-TODO:** #23 ✅ complete
@@ -65,7 +65,7 @@ Recommended: v1.1.0 (minor — 4 features, 2 fixes)
 Release as v1.1.0? (yes / no / specify version)
 ```
 
-### Phase 4: Execution (11 steps, fully automated after confirmation)
+### Phase 4: Execution (12 steps, fully automated after confirmation)
 
 1. Checkout `main`
 2. Merge `dev` → `main` (no-ff)
@@ -78,10 +78,11 @@ Release as v1.1.0? (yes / no / specify version)
 9. Push
 10. Write KB vault release page at `vault/it-and-projects/projects/{project}/releases/vX.Y.Z.md`
 11. Commit and push KB vault (separate repo)
+12. Update MEMORY.md with the new version, release date, and phase status. For projects with a live version endpoint (e.g. `/api/version`), verify the deployed version matches the tag.
 
 ### Phase 5: Post-release verification
 
-Confirms the GitHub Release exists and CI has triggered. Outputs rollback commands regardless of release outcome.
+Confirms the GitHub Release exists and CI has triggered. Outputs rollback commands regardless of release outcome. Confirms MEMORY.md version matches the release.
 
 ---
 
@@ -91,6 +92,7 @@ Confirms the GitHub Release exists and CI has triggered. Outputs rollback comman
 |---|---|
 | CHANGELOG.md is created/updated | GitHub Releases do not replace it. It is the version-controlled record in the project repo. |
 | KB vault release page is written | Contains the rollback command. Required for every release — not optional. |
+| MEMORY.md version is updated | Stale versions in memory cause confusion in future sessions. Update immediately — do not rely on end-of-session to catch it. |
 | Rollback commands always shown | Even on success. Needed at 11pm when something goes wrong. |
 | Hard-stop failures create GitHub Issues | Failures are tracked items, not silent blocks. |
 

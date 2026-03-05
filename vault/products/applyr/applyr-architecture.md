@@ -1,14 +1,13 @@
-# Applyr — Architecture
-
-**Type:** Reference page
-**Workspace:** IT & Projects
-**Section:** Applyr
-**Status:** Active
-**Created:** 2026-03-03
-**Updated:** 2026-03-03 (Phase 3b — Settings page, research UI)
-**Author:** Simon Paynter + Claude
-
 ---
+title: Applyr — Architecture
+status: published
+order: 20
+author: both
+created: 2026-03-03
+updated: 2026-03-04
+---
+
+# Applyr — Architecture
 
 ## Stack
 
@@ -22,7 +21,7 @@
 | Frontend | Vanilla JS ES6 modules | No bundler, no framework |
 | Icons | Lucide 0.469.0 (vendored UMD) | `window.lucide.createIcons()` called after DOM mutations |
 | Fonts | Plus Jakarta Sans | Google Fonts CDN |
-| CI/CD | GitHub Actions → GHCR → Watchtower | `:dev` on push to `dev`, `:latest` on push to `main` (when released) |
+| CI/CD | GitHub Actions → GHCR → Watchtower | `:dev` on push to `dev`, `:latest` on push to `main` |
 | Hosting | QNAP NAS, Cloudflare Tunnel | Staging: `applyr-staging.ss-42.com`, Production: `jobs.ss-42.com` |
 
 ---
@@ -35,8 +34,6 @@
 
 **Host (NAS internal):** `10.0.3.12:5432`
 **Host (LAN):** `192.168.86.18:32775`
-**User:** `nocodb` (owner, has CREATE privilege)
-**Password:** `nocodb2026`
 
 ### Schema layout
 
@@ -55,20 +52,22 @@ Two schemas in use:
 | Table | Purpose | Status |
 |---|---|---|
 | `role_tracks` | Search tracks per user (product / IT). Slug, scoring_criteria (jsonb) | Seeded at migration |
-| `user_settings` | Per-user settings: anthropic_api_key, notification_prefs, timezone | API key UI live (Phase 3b) |
-| `jobs` | Central entity. 25 columns. Status lifecycle (11 states), score, verdict, source, arrangement | Live |
+| `user_settings` | Per-user settings: anthropic_api_key, notification_prefs, timezone | API key UI live |
+| `jobs` | Central entity. 24 columns. Status lifecycle (11 states), score, verdict, source, arrangement | Live |
 | `job_scores` | AI scoring output (1:1 with jobs): dimensions jsonb, overall_rationale, model_used | Live (written by n8n pipeline) |
-| `company_research` | AI research (1:1 with jobs): content jsonb (7 sections), user_notes | Live (Phase 3) |
-| `cover_letters` | Versioned drafts (1:many per job): content, status, feedback, model_used | Live (Phase 3) |
-| `notifications` | In-app notifications: tier, title, message, link, is_read | Live (created by background AI trigger) |
-| `resumes` | Uploaded resume files: filename, file_path, content_text, parsed_data | Schema only — Phase 4 |
-| `resume_tailorings` | Per-job resume variants: changes jsonb, ats_score, status | Schema only — Phase 4 |
-| `application_questions` | Q&A for application forms | Schema only — Phase 4 |
+| `company_research` | AI research (1:1 with jobs): content jsonb (7 sections), user_notes | Live |
+| `cover_letters` | Versioned drafts (1:many per job): content, status, feedback, model_used. No user_id — isolation via jobs FK | Live |
+| `notifications` | In-app notifications: tier (high/medium/low), title, message, link, is_read | Live |
+| `resumes` | Uploaded resume files: filename, file_path, content_text, parsed_data | Live |
+| `resume_tailorings` | Per-job resume variants: changes jsonb, ats_score, resume_content, status | Live |
+| `application_questions` | Q&A for application forms: question, ai_answer, user_answer | Live |
+| `activity_log` | Audit trail: action, details jsonb, user_id, job_id | Live |
 | `voice_profiles` | User writing voice (1:1): profile_data jsonb | Schema only — not yet used |
 | `contacts` | People contacts per job | Schema only — not yet used |
-| `activity_log` | Audit trail of actions | Schema only — not yet written to |
 
-Total: 15 tables across 2 schemas (3 in shared_auth + 12 in public — sessions created by connect-pg-simple automatically).
+Total: 15 tables across 2 schemas (3 in shared_auth + 12 in public).
+
+**Important:** `cover_letters` has no `user_id` column. User isolation is via `jobs.user_id` through the `job_id` foreign key. All queries joining cover_letters must go through jobs for user scoping.
 
 ### Jobs status lifecycle
 
@@ -84,7 +83,7 @@ Archived jobs can return to `new` or `interested`. Rejected/withdrawn can return
 
 ## Authentication
 
-Single auth model for all SS42 apps. See also: [Cross-App Auth Architecture](../../infrastructure/cross-app-auth-architecture.md).
+Single auth model for all SS42 apps.
 
 | Path | Mechanism |
 |---|---|
@@ -95,8 +94,6 @@ Single auth model for all SS42 apps. See also: [Cross-App Auth Architecture](../
 - **Invite gate:** `shared_auth.allowed_emails` — only `paynter.simon@gmail.com` seeded
 - **Google OAuth client:** `709232597737-...34f` (project: `cloudflare-access-488710`)
 - **State validation:** `state: true` in GoogleStrategy constructor (passport-oauth2 v1.8.0)
-
-**Important gotcha:** Subdomain-scoped cookies from before SSO shadow the new `.ss-42.com` cookie on first login after migration. Users must clear cookies once.
 
 ---
 
@@ -134,8 +131,8 @@ All routes under `/api/v1/` require authentication (`requireUser` middleware). A
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/review` | "new" status jobs sorted by score DESC (for review queue) |
-| POST | `/api/v1/review/:id/decide` | Mark interested or skip. If interested, fires background AI generation |
+| GET | `/api/v1/review` | "new" status jobs sorted by score DESC |
+| POST | `/api/v1/review/:id/decide` | Mark interested or skip. If interested, fires background AI |
 | GET | `/api/v1/review/count` | Count of "new" jobs (for sidebar badge) |
 
 ### Company research
@@ -143,21 +140,8 @@ All routes under `/api/v1/` require authentication (`requireUser` middleware). A
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/v1/jobs/:id/research` | Get research for job (null if none) |
-| POST | `/api/v1/jobs/:id/research/generate` | Generate via Claude (Sonnet). Upserts company_research |
+| POST | `/api/v1/jobs/:id/research/generate` | Generate via Claude Sonnet. Upserts company_research |
 | PATCH | `/api/v1/jobs/:id/research` | Update user_notes only |
-
-Research content schema (jsonb):
-```json
-{
-  "overview": "string",
-  "key_facts": [{"label": "string", "value": "string"}],
-  "tech_stack": ["string"],
-  "culture_signals": ["string"],
-  "news": [{"headline": "string", "summary": "string"}],
-  "competitors": ["string"],
-  "interview_angles": ["string"]
-}
-```
 
 ### Cover letters
 
@@ -165,11 +149,55 @@ Research content schema (jsonb):
 |---|---|---|
 | GET | `/api/v1/jobs/:id/cover-letters` | List all versions |
 | GET | `/api/v1/jobs/:id/cover-letters/current` | Latest version |
-| POST | `/api/v1/jobs/:id/cover-letters/generate` | Generate v1 via Claude (Sonnet) |
+| POST | `/api/v1/jobs/:id/cover-letters/generate` | Generate v1 via Claude Sonnet |
 | PATCH | `/api/v1/jobs/:id/cover-letters/:version` | Update feedback or status |
 | POST | `/api/v1/jobs/:id/cover-letters/:version/rewrite` | Rewrite from feedback → creates next version |
 
-Cover letter status lifecycle: `draft → feedback → approved → sent`
+### Resume
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/v1/resumes/upload` | Upload PDF/DOCX, parse with Haiku |
+| GET | `/api/v1/jobs/:id/tailoring` | Get tailoring for job |
+| POST | `/api/v1/jobs/:id/tailoring/generate` | Generate tailored resume via Sonnet |
+
+### Application questions
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/jobs/:id/questions` | List questions for job |
+| POST | `/api/v1/jobs/:id/questions` | Add question |
+| POST | `/api/v1/jobs/:id/questions/:qid/generate` | AI-generate answer |
+| PATCH | `/api/v1/jobs/:id/questions/:qid` | Update answer |
+| DELETE | `/api/v1/jobs/:id/questions/:qid` | Delete question |
+
+### Home
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/home` | Dashboard aggregates: review count, CLs due, interviews, stale apps, pipeline summary, recent activity |
+
+### Metrics
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/metrics` | Dashboard: totals, response rate, by stage, by week, by track, score by outcome |
+| GET | `/api/v1/metrics/activity` | Paginated activity feed (limit clamped to 100) |
+
+### Notifications
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/notifications` | List (supports unread filter, pagination) |
+| GET | `/api/v1/notifications/unread-count` | Badge count |
+| PATCH | `/api/v1/notifications/:id` | Mark read |
+| POST | `/api/v1/notifications/read-all` | Mark all read |
+
+### Search
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/search?q=` | Search jobs (company/role/notes) + cover letters (content). Min 2 chars, ILIKE |
 
 ### Settings
 
@@ -194,29 +222,33 @@ Single-page application. Hash-based routing (`#/pipeline`, `#/jobs/:id`, etc.).
 
 | Hash | View | Status |
 |---|---|---|
+| `#/home` | Home dashboard (greeting, action cards, pipeline summary, activity feed) | Live |
 | `#/pipeline` | Pipeline (kanban / list / table) | Live |
 | `#/review` | Review queue (list mode + detail mode) | Live |
 | `#/archive` | Archive (filterable, reconsider action) | Live |
-| `#/jobs/:id` | Job detail (Overview, Research, Cover Letter tabs) | Live |
+| `#/jobs/:id` | Job detail (Overview, Research, Cover Letter, Resume, Application tabs) | Live |
+| `#/metrics` | Metrics dashboard (hero cards, funnel, charts, breakdowns) | Live |
 | `#/settings` | Settings (API key management) | Live |
-| `#/home` | Home dashboard | Stub — Phase 5 |
-| `#/metrics` | Metrics | Stub — Phase 5 |
-| `#/preparation` | Interview prep | Stub — Phase 5 |
+| `#/preparation` | Interview prep | Stub — Phase 6 |
 | `#/help` | Help | Stub — Phase 6 |
 
 ### Key files
 
 | File | Purpose |
 |---|---|
-| `public/js/app.js` | Init, auth check, route registration, sidebar render |
+| `public/js/app.js` | Init, auth check, route registration, sidebar render, notification + search init |
 | `public/js/router.js` | Hash-based router — route(), navigate(), startRouter() |
 | `public/js/api.js` | API client — all fetch calls, ApiError class |
+| `public/js/views/home.js` | Home page (greeting, action cards, pipeline, activity, stale) |
 | `public/js/views/pipeline.js` | Pipeline view (kanban/list/table) |
-| `public/js/views/jobDetail.js` | Job detail (all tabs: Overview, Research, Cover Letter) |
+| `public/js/views/jobDetail.js` | Job detail (all 5 tabs) |
 | `public/js/views/review.js` | Review queue (list + detail modes, keyboard shortcuts) |
 | `public/js/views/archive.js` | Archive view |
-| `public/js/views/settings.js` | Settings page (API key input, save/remove) |
-| `public/js/components/sidebar.js` | Sidebar nav, Lucide icons, badge |
+| `public/js/views/metrics.js` | Metrics dashboard |
+| `public/js/views/settings.js` | Settings page |
+| `public/js/components/sidebar.js` | Sidebar nav, search + bell in header, Lucide icons, badge |
+| `public/js/components/notifications.js` | Bell icon, slide-out panel, 60s polling |
+| `public/js/components/search.js` | Cmd+K overlay, debounced search, grouped results |
 | `public/js/components/contextPanel.js` | Collapsible right panel (review detail mode) |
 
 ### Security constraint
@@ -227,24 +259,17 @@ No `innerHTML` anywhere in the frontend. All DOM construction uses DOM APIs (`cr
 
 ## AI services
 
-Two backend services wrap the Anthropic SDK:
+Four backend services wrap the Anthropic SDK:
 
-**`server/services/ai.js`**
-- Reads `anthropic_api_key` from `user_settings` for the requesting user
-- Creates Anthropic client per request (no shared instance)
-- Logs token usage after each call
-- Throws `ApiError` with user-facing message if no key set
+**`server/services/ai.js`** — Creates Anthropic client per request using per-user API key from `user_settings`. Logs token usage.
 
-**`server/services/research.js`**
-- Generates 7-section structured JSON via Claude Sonnet
-- Upserts into `company_research` table
-- Input: job description + role + company + location
+**`server/services/research.js`** — 7-section structured company research via Claude Sonnet. Upserts into `company_research`.
 
-**`server/services/coverLetter.js`**
-- Generates draft CLs using job description + research content + Simon's profile
-- Rewrites from feedback (compiled inline highlights + general text)
-- Each version is a new row in `cover_letters` (immutable — version 1 is never mutated)
-- Model: Claude Sonnet
+**`server/services/coverLetter.js`** — Versioned cover letter drafts. Rewrites from compiled inline highlights + general feedback. Each version is immutable.
+
+**`server/services/tailoring.js`** — Resume tailoring via Sonnet (8192 maxTokens, max 8 changes). Produces ATS score and changes array with inline resume content.
+
+**`server/services/notifications.js`** — Creates notifications with tier-based priority. `notifyStatusChange()` maps status transitions to notification tiers (high for interview/offer, medium for rejected, low for applied).
 
 ### Background trigger
 
@@ -264,28 +289,11 @@ When a job is marked `interested` via `POST /api/v1/review/:id/decide`:
 | `applyr-staging` | 8083:3000 | `ghcr.io/sspaynter/applyr:dev` | Staging (Watchtower auto-deploys on push to dev) |
 | `applyr` (not yet created) | 8084:3000 | `ghcr.io/sspaynter/applyr:latest` | Production |
 
-### Environment variables
-
-| Variable | Value (staging) | Notes |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://nocodb:nocodb2026@10.0.3.12:5432/applyr_staging` | NAT address inside NAS network |
-| `SESSION_SECRET` | 128-char hex | Stored in `/share/Container/shared-secrets.env` |
-| `GOOGLE_CLIENT_ID` | `709232597737-...34f` | Rotated session 27 |
-| `GOOGLE_CLIENT_SECRET` | — | Stored in `/share/Container/shared-secrets.env` |
-| `GOOGLE_CALLBACK_URL` | `https://applyr-staging.ss-42.com/auth/google/callback` | |
-| `COOKIE_DOMAIN` | `.ss-42.com` | Unset in dev — scopes cookie for SSO |
-| `NODE_ENV` | `production` | |
-| `PORT` | `3000` | |
-
 ### CI/CD
 
 1. Push to `dev` branch
 2. GitHub Actions builds Docker image and pushes to `ghcr.io/sspaynter/applyr:dev`
 3. Watchtower on NAS polls registry (every 5 minutes) and redeploys `applyr-staging`
-
-### Secrets file (NAS)
-
-`/share/Container/shared-secrets.env` — chmod 600, single source of truth for all rotated secrets. Referenced by Container Station environment config.
 
 ---
 
@@ -304,19 +312,25 @@ Matches Knowledge Base v2.0 design language:
 
 ## Test suite
 
-139 tests across 10 files (as of Phase 3b):
+219 tests across 16 files (as of session 42):
 
-| File | Tests | Coverage area |
-|---|---|---|
-| `health.test.js` | — | Health endpoint |
-| `auth.test.js` | — | Auth routes, session |
-| `middleware.test.js` | — | requireUser, validation |
-| `jobs.test.js` | — | Jobs CRUD, status transitions |
-| `pipeline.test.js` | — | Pipeline grouping |
-| `review.test.js` | — | Review queue, decide |
-| `research.test.js` | — | Research generate, notes |
-| `coverLetters.test.js` | — | CL generate, rewrite, approve |
-| `security.test.js` | — | CSP, auth isolation, param validation |
-| `settings.test.js` | 8 | Settings GET/PATCH, key masking, validation |
+| File | Coverage area |
+|---|---|
+| `health.test.js` | Health endpoint |
+| `auth.test.js` | Auth routes, session |
+| `middleware.test.js` | requireUser, validation |
+| `jobs.test.js` | Jobs CRUD, status transitions |
+| `pipeline.test.js` | Pipeline grouping |
+| `review.test.js` | Review queue, decide |
+| `research.test.js` | Research generate, notes |
+| `coverLetters.test.js` | CL generate, rewrite, approve |
+| `resume.test.js` | Upload, tailoring, parsing |
+| `questions.test.js` | Application Q&A CRUD, AI generate |
+| `security.test.js` | CSP, auth isolation, param validation |
+| `settings.test.js` | Settings GET/PATCH, key masking |
+| `home.test.js` | Home dashboard aggregates |
+| `metrics.test.js` | Metrics dashboard, activity feed |
+| `notifications.test.js` | Notification CRUD, read/unread |
+| `search.test.js` | Global search, ILIKE, user scoping |
 
 Run: `npm test` from `~/Documents/Claude/applyr/`

@@ -22,6 +22,7 @@
 - [ ] No real credentials in `docker-compose.yml` — use `${ENV_VAR}` references
 - [ ] Google OAuth client secret is not in source control
 - [ ] All apps sharing SSO use the SAME `SESSION_SECRET` value
+- [ ] No hardcoded fallback database credentials in service files — use env vars only, throw on missing
 
 ## Cookies
 
@@ -60,6 +61,13 @@
 - [ ] Sort fields validated against a whitelist before interpolation
 - [ ] Every query that accesses user data includes `AND user_id = $N` (prevents IDOR)
 - [ ] ID parameters validated as numeric before reaching route handlers
+
+## Static File Serving
+
+- [ ] Uploaded files served through an authenticated route — not as unauthenticated static files
+- [ ] No `app.use('/uploads', express.static(...))` without auth middleware in front
+- [ ] Vault directory has no static route — content only accessible through authenticated API endpoints
+- [ ] Directory indexing disabled on all static routes
 
 ## Input and Output
 

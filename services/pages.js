@@ -18,13 +18,7 @@ async function getPageTree(sectionId) {
     WHERE section_id = $1 AND deleted_at IS NULL
     ORDER BY sort_order, title
   `, [sectionId]);
-  return buildTree(res.rows);
-}
-
-function buildTree(rows, parentId = null) {
-  return rows
-    .filter(r => r.parent_id === parentId)
-    .map(r => ({ ...r, children: buildTree(rows, r.id) }));
+  return res.rows;
 }
 
 // ── Single page (with vault read fallback) ────────────────

@@ -6,7 +6,7 @@
 **Template:** blank
 **Status:** Active
 **Created:** 2026-02-27
-**Updated:** 2026-03-03 (v2.0 Phase 5 — all phases complete on dev branch)
+**Updated:** 2026-03-05 (v2.1.0 — API-first vault sync)
 **Author:** Simon Paynter + Claude
 
 ---
@@ -129,10 +129,12 @@ Claude → POST /api/pages → Creates page from template if none exists
 
 Claude never connects to PostgreSQL directly. Always via the REST API with a bearer token.
 
-### Key API endpoints (v2.0)
+### Key API endpoints (v2.1)
 
 | Endpoint | Purpose |
 |---|---|
+| `POST /api/pages/by-path` | Upsert page from raw .md with frontmatter — vault sync push (v2.1.0) |
+| `GET /api/pages/export` | Bulk export pages with optional `?since=` filter — vault sync pull (v2.1.0) |
 | `POST /api/sync` | Trigger sync for a specific vault file (auth required) |
 | `GET /api/pages/by-path?path=...` | Look up page by vault file path (checks `previous_paths` too) |
 | `GET /api/pages/:id/versions` | List version history for a page |

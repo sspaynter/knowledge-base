@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Base — Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --base:        #0d0d11;
+      --surface:     #13131a;
+      --surface-2:   #18181f;
+      --elevated:    #1e1e28;
+      --border:      #28283a;
+      --border-soft: #1c1c26;
+      --text-1:      #f0ede8;
+      --text-2:      #8c8ca0;
+      --text-3:      #52526a;
+      --accent:      #2dd4bf;
+      --accent-bg:   rgba(45,212,191,0.09);
+      --green:       #22c55e;
+      --amber:       #f59e0b;
+      --red:         #ef4444;
+      --purple:      #a855f7;
+      --blue:        #60a5fa;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--base); color: var(--text-1); font-size: 14px; line-height: 1.5; }
+
+    /* Proto nav */
+    .proto-nav {
+      height: 34px; background: #160c2e; border-bottom: 1px solid #3b1a6b;
+      display: flex; align-items: center; padding: 0 14px; gap: 10px;
+      font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #b09fd8; flex-shrink: 0;
+    }
+    .proto-label { color: #7c5cbf; font-weight: 500; letter-spacing: 0.5px; }
+    .proto-sep { color: #3b1a6b; }
+    .proto-nav select {
+      background: #2d1a50; border: 1px solid #4a2a80; color: #d4c6f0;
+      padding: 2px 8px; border-radius: 4px; font-size: 11px;
+      font-family: 'JetBrains Mono', monospace; cursor: pointer; outline: none;
+    }
+    .proto-hint { color: #4a2a7a; font-size: 10px; margin-left: auto; }
+
+    /* App shell */
+    .app-shell { display: flex; flex-direction: column; height: calc(100vh - 34px); }
+    .app-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* Top bar */
+    .topbar {
+      height: 50px; background: var(--surface); border-bottom: 1px solid var(--border-soft);
+      display: flex; align-items: center; padding: 0 16px 0 0; flex-shrink: 0;
+    }
+    .topbar-brand {
+      width: 54px; height: 50px; display: flex; align-items: center; justify-content: center;
+      border-right: 1px solid var(--border-soft); flex-shrink: 0; cursor: pointer;
+    }
+    .logo-42 {
+      width: 32px; height: 32px; border-radius: 8px; background: var(--elevated);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 15px; letter-spacing: -0.5px; color: var(--text-1);
+    }
+    .topbar-app-label { font-size: 13px; font-weight: 500; color: var(--text-2); white-space: nowrap; margin: 0 12px; }
+    .topbar-search { flex: 1; display: flex; justify-content: center; }
+    .search-trigger {
+      display: flex; align-items: center; gap: 8px; background: var(--elevated);
+      border: 1px solid var(--border); border-radius: 22px; padding: 6px 14px;
+      cursor: pointer; width: 340px; color: var(--text-3); font-size: 13px; transition: border-color 140ms;
+    }
+    .search-trigger:hover { border-color: var(--accent); }
+    .search-shortcut {
+      margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      background: var(--surface-2); padding: 2px 6px; border-radius: 4px; color: var(--text-3);
+    }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .topbar-map-btn {
+      display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px;
+      background: var(--elevated); border: 1px solid var(--border); color: var(--text-2);
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 140ms;
+    }
+    .topbar-map-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; background: transparent; border: none;
+      color: var(--text-2); cursor: pointer; transition: background 140ms, color 140ms;
+    }
+    .icon-btn:hover { background: var(--surface-2); color: var(--text-1); }
+    .topbar-avatar {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--accent-bg);
+      border: 1px solid var(--accent); color: var(--accent);
+      display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+
+    /* Rail */
+    .rail {
+      width: 54px; background: var(--surface); border-right: 1px solid var(--border-soft);
+      display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 4px; flex-shrink: 0;
+    }
+    .rail-item {
+      width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; position: relative; color: var(--text-3); transition: all 140ms;
+    }
+    .rail-item:hover { background: var(--surface-2); color: var(--text-2); }
+    .rail-item.active { color: var(--accent); background: var(--accent-bg); }
+    .rail-item.active::before {
+      content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 18px; background: var(--accent); border-radius: 0 2px 2px 0;
+    }
+    .rail-spacer { flex: 1; }
+    .rail-add {
+      width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; color: var(--text-3); border: 1px dashed var(--border); transition: all 140ms;
+    }
+    .rail-add:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Sidebar */
+    .sidebar {
+      width: 244px; background: var(--surface); border-right: 1px solid var(--border-soft);
+      display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+    }
+    .sidebar-head {
+      padding: 12px 14px 10px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .sidebar-ws-name { font-size: 12px; font-weight: 600; color: var(--text-1); }
+    .sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .sidebar-scroll::-webkit-scrollbar { width: 3px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .section-group { margin-bottom: 2px; }
+    .section-head {
+      display: flex; align-items: center; gap: 6px; padding: 5px 10px 5px 12px;
+      cursor: pointer; border-radius: 8px; margin: 0 4px; color: var(--text-2);
+      font-size: 12px; font-weight: 500; transition: background 120ms;
+    }
+    .section-head:hover { background: var(--surface-2); }
+    .section-chevron { margin-left: auto; color: var(--text-3); transition: transform 200ms ease-out; }
+    .section-group.closed .section-chevron { transform: rotate(-90deg); }
+    .section-group.closed .section-pages { display: none; }
+    .page-item {
+      display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 12px;
+      border-radius: 8px; margin: 0 4px 1px; cursor: pointer; color: var(--text-2);
+      font-size: 12px; transition: background 120ms, color 120ms;
+    }
+    .page-item:hover { background: var(--surface-2); color: var(--text-1); }
+    .page-item.active { background: var(--accent-bg); color: var(--accent); border-left: 2px solid var(--accent); padding-left: 10px; }
+    .p1 { padding-left: 24px; }
+    .p2 { padding-left: 36px; }
+    .page-item.active.p2 { padding-left: 34px; }
+    .sidebar-foot { padding: 8px; border-top: 1px solid var(--border-soft); }
+    .sidebar-add-btn {
+      display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px;
+      cursor: pointer; color: var(--text-3); font-size: 12px; transition: all 140ms;
+    }
+    .sidebar-add-btn:hover { background: var(--surface-2); color: var(--text-2); }
+
+    /* Content pane */
+    .content-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--base); }
+    .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    /* Reading */
+    .reading-scroll { flex: 1; overflow-y: auto; padding: 32px 48px 80px; }
+    .reading-scroll::-webkit-scrollbar { width: 6px; }
+    .reading-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; margin-bottom: 22px; }
+    .breadcrumb-sep { color: var(--border); }
+    .bc-link { cursor: pointer; transition: color 120ms; }
+    .bc-link:hover { color: var(--accent); }
+    .bc-current { color: var(--text-2); }
+    .page-title-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .page-title { font-size: 28px; font-weight: 600; color: var(--text-1); letter-spacing: -0.7px; line-height: 1.15; }
+    .page-btn-group { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .btn-edit {
+      display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px;
+      background: var(--accent-bg); border: 1px solid rgba(45,212,191,0.2);
+      color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 140ms;
+    }
+    .btn-edit:hover { background: rgba(45,212,191,0.15); }
+    .btn-more {
+      width: 28px; height: 28px; border-radius: 8px; background: var(--elevated);
+      border: 1px solid var(--border); color: var(--text-2);
+      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 140ms;
+    }
+    .btn-more:hover { border-color: var(--accent); color: var(--accent); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid; }
+    .badge-active   { color: var(--green);  border-color: rgba(34,197,94,0.3);  background: rgba(34,197,94,0.07); }
+    .badge-draft    { color: var(--amber);  border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.07); }
+    .badge-skill    { color: var(--accent); border-color: rgba(45,212,191,0.3); background: rgba(45,212,191,0.07); }
+    .badge-global   { color: var(--purple); border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); }
+    .meta-sep { color: var(--border); }
+    .meta-text { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+    .divider { height: 1px; background: var(--border-soft); margin: 20px 0; }
+    .page-body { font-family: 'Lora', serif; font-size: 15.5px; line-height: 1.82; color: var(--text-1); max-width: 700px; }
+    .page-body h2 { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-1); margin: 30px 0 10px; }
+    .page-body h3 { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); margin: 20px 0 8px; }
+    .page-body p { margin-bottom: 14px; }
+    .page-body ul, .page-body ol { margin: 0 0 14px 22px; }
+    .page-body li { margin-bottom: 4px; }
+    .page-body code { font-family: 'JetBrains Mono', monospace; font-size: 13px; background: var(--elevated); padding: 1px 5px; border-radius: 4px; color: var(--accent); }
+    .page-body pre { background: var(--elevated); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; margin-bottom: 16px; overflow-x: auto; }
+    .page-body pre code { background: none; padding: 0; color: var(--text-2); }
+    .page-body strong { font-weight: 600; color: var(--text-1); }
+
+    /* Asset panel */
+    .asset-panel { max-width: 700px; margin-top: 48px; }
+    .asset-panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px 12px 0 0; cursor: pointer;
+    }
+    .asset-panel-head-left { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text-2); }
+    .asset-count { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+    .asset-panel-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; }
+    .asset-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border-soft); cursor: pointer; transition: background 120ms; }
+    .asset-row:last-child { border-bottom: none; }
+    .asset-row:hover { background: var(--surface-2); }
+    .asset-icon { color: var(--text-3); flex-shrink: 0; }
+    .asset-name { font-size: 13px; color: var(--text-1); font-weight: 500; }
+    .asset-meta { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+
+    /* Editor */
+    .editor-bar { padding: 10px 16px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px; background: var(--surface); }
+    .editor-title { flex: 1; background: transparent; border: none; font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 600; color: var(--text-1); outline: none; letter-spacing: -0.4px; }
+    .editor-title::placeholder { color: var(--text-3); }
+    .editor-actions { display: flex; align-items: center; gap: 8px; }
+    .draft-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); cursor: pointer; }
+    .toggle { width: 32px; height: 18px; border-radius: 9px; background: var(--border); position: relative; cursor: pointer; transition: background 140ms; }
+    .toggle.on { background: var(--accent); }
+    .toggle-knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: white; transition: left 140ms; }
+    .toggle.on .toggle-knob { left: 16px; }
+    .btn-primary { padding: 7px 16px; border-radius: 10px; background: var(--accent); border: none; color: #0d0d11; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 140ms; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-secondary { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 10px; background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 140ms; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .editor-breadcrumb { padding: 8px 16px; border-bottom: 1px solid var(--border-soft); background: var(--surface); font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; display: flex; gap: 6px; }
+    .editor-split { flex: 1; display: flex; overflow: hidden; }
+    .editor-left { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border-soft); }
+    .editor-toolbar { padding: 6px 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 2px; flex-wrap: wrap; }
+    .tool-btn { padding: 4px 8px; border-radius: 6px; background: transparent; border: none; color: var(--text-2); font-size: 12px; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 120ms; }
+    .tool-btn:hover { background: var(--elevated); color: var(--text-1); }
+    .editor-textarea { flex: 1; background: var(--base); border: none; resize: none; padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-2); line-height: 1.75; outline: none; }
+    .editor-textarea::placeholder { color: var(--text-3); }
+    .editor-foot { padding: 8px 16px; border-top: 1px solid var(--border-soft); display: flex; align-items: center; gap: 8px; }
+    .autosave { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+    .editor-right { flex: 1; padding: 24px 40px; overflow-y: auto; }
+    .editor-right .page-body { max-width: none; }
+    .preview-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); margin-bottom: 16px; font-family: 'DM Sans', sans-serif; padding-bottom: 10px; border-bottom: 1px solid var(--border-soft); }
+
+    /* Map */
+    .map-scroll { flex: 1; overflow-y: auto; padding: 32px 48px 80px; }
+    .map-scroll::-webkit-scrollbar { width: 6px; }
+    .map-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .map-title { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .map-sub { font-size: 14px; color: var(--text-2); line-height: 1.5; margin-bottom: 28px; }
+    .map-filters { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-label { font-size: 12px; color: var(--text-3); }
+    .filter-select { background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); padding: 6px 10px; border-radius: 8px; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; outline: none; transition: border-color 140ms; }
+    .filter-select:focus { border-color: var(--accent); }
+    .rel-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .rel-table th { text-align: left; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+    .rel-table td { padding: 10px 14px; border-bottom: 1px solid var(--border-soft); color: var(--text-2); vertical-align: top; }
+    .rel-table tr:hover td { background: var(--surface-2); }
+    .rel-asset { display: inline-flex; align-items: center; gap: 5px; color: var(--text-1); font-weight: 500; }
+    .asset-type-tag { font-size: 10px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; display: block; margin-top: 1px; }
+    .rel-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; background: var(--elevated); color: var(--text-2); border: 1px solid var(--border); }
+    .rel-badge.loads     { color: var(--accent); border-color: rgba(45,212,191,0.3);  background: rgba(45,212,191,0.08); }
+    .rel-badge.uses      { color: var(--purple); border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); }
+    .rel-badge.generates { color: var(--amber);  border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.07); }
+    .rel-badge.deploys-to  { color: var(--green); border-color: rgba(34,197,94,0.3);  background: rgba(34,197,94,0.07); }
+    .rel-badge.connects-to { color: var(--blue);  border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.06); }
+    .rel-badge.supersedes  { color: var(--red);   border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.06); }
+    .rel-notes { font-size: 11px; color: var(--text-3); max-width: 220px; line-height: 1.4; }
+
+    /* Search overlay */
+    .search-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: flex-start; justify-content: center; padding-top: 80px; }
+    .search-overlay.open { display: flex; }
+    .search-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 600px; max-height: 500px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    .search-input-row { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border-soft); }
+    .search-field { flex: 1; background: transparent; border: none; font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text-1); outline: none; }
+    .search-field::placeholder { color: var(--text-3); }
+    .search-esc { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-3); cursor: pointer; }
+    .search-filters { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border-soft); }
+    .filter-chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; border: 1px solid var(--border); color: var(--text-3); cursor: pointer; transition: all 120ms; }
+    .filter-chip:hover, .filter-chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+    .search-results { overflow-y: auto; flex: 1; }
+    .result-item { padding: 12px 16px; border-bottom: 1px solid var(--border-soft); cursor: pointer; transition: background 120ms; }
+    .result-item:hover, .result-item.sel { background: var(--surface-2); }
+    .result-title { font-size: 14px; font-weight: 500; color: var(--text-1); margin-bottom: 2px; }
+    .result-path { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+    .result-excerpt { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+    .result-excerpt mark { background: rgba(45,212,191,0.2); color: var(--accent); border-radius: 2px; padding: 0 2px; }
+    .search-footer { padding: 10px 16px; border-top: 1px solid var(--border-soft); display: flex; gap: 16px; }
+    .search-hint { font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 4px; }
+    .search-hint kbd { background: var(--elevated); padding: 1px 5px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+    /* Settings overlay */
+    .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; }
+    .settings-overlay.open { display: flex; }
+    .settings-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 720px; height: 520px; display: flex; overflow: hidden; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    .settings-nav { width: 188px; border-right: 1px solid var(--border-soft); padding: 16px 8px; display: flex; flex-direction: column; gap: 2px; }
+    .sn-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px 4px; }
+    .sn-item { padding: 7px 10px; border-radius: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 120ms; }
+    .sn-item:hover { background: var(--surface-2); color: var(--text-1); }
+    .sn-item.active { background: var(--accent-bg); color: var(--accent); }
+    .sn-item.danger { color: var(--red); }
+    .sn-item.danger:hover { background: rgba(239,68,68,0.1); }
+    .settings-body { flex: 1; padding: 24px; overflow-y: auto; }
+    .settings-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; letter-spacing: -0.3px; }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border-soft); }
+    .settings-row:last-child { border-bottom: none; }
+    .s-row-label { font-size: 14px; color: var(--text-1); }
+    .s-row-desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+    .settings-input { background: var(--elevated); border: 1px solid var(--border); color: var(--text-1); padding: 7px 12px; border-radius: 10px; font-size: 13px; font-family: 'DM Sans', sans-serif; width: 200px; outline: none; transition: border-color 140ms; }
+    .settings-input:focus { border-color: var(--accent); }
+    .token-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--elevated); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+    .token-name { flex: 1; font-size: 13px; color: var(--text-1); font-weight: 500; }
+    .token-date { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+    .token-revoke { font-size: 12px; color: var(--red); cursor: pointer; }
+    .token-revoke:hover { text-decoration: underline; }
+    .modal-x { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 8px; background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    /* Context menu */
+    .ctx-menu { position: fixed; background: var(--elevated); border: 1px solid var(--border); border-radius: 10px; padding: 6px; z-index: 450; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .ctx-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; font-size: 13px; color: var(--text-1); cursor: pointer; transition: background 120ms; }
+    .ctx-item:hover { background: var(--surface-2); }
+    .ctx-item.danger { color: var(--red); }
+    .ctx-divider { height: 1px; background: var(--border-soft); margin: 4px 0; }
+
+    /* Annotation */
+    .ann-badge {
+      position: absolute; top: -7px; right: -7px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--amber); color: #0d0d11;
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 200; font-family: 'DM Sans', sans-serif;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5); transition: transform 120ms;
+    }
+    .ann-badge:hover { transform: scale(1.2); }
+    .ann-popup {
+      position: fixed; background: var(--surface); border: 1px solid var(--accent);
+      border-radius: 10px; padding: 12px 14px; width: 288px; z-index: 400;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+    }
+    .ann-popup-label { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+    .ann-input { width: 100%; background: var(--elevated); border: 1px solid var(--border); color: var(--text-1); padding: 7px 10px; border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; margin-bottom: 10px; transition: border-color 140ms; }
+    .ann-input:focus { border-color: var(--accent); }
+    .ann-popup-btns { display: flex; gap: 6px; justify-content: flex-end; }
+    .ann-tooltip { position: fixed; background: var(--elevated); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--text-1); max-width: 250px; z-index: 400; box-shadow: 0 4px 16px rgba(0,0,0,0.45); line-height: 1.4; }
+    .ann-num { color: var(--amber); font-weight: 700; margin-right: 4px; }
+
+    /* Notes panel */
+    .notes-panel { position: fixed; right: 0; top: 84px; bottom: 0; width: 304px; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 200ms ease-out; z-index: 150; }
+    .notes-panel.open { transform: translateX(0); }
+    .notes-panel-head { padding: 14px 16px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between; }
+    .notes-panel-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+    .notes-actions { display: flex; gap: 6px; align-items: center; }
+    .copy-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 8px; background: var(--accent-bg); border: 1px solid rgba(45,212,191,0.2); color: var(--accent); font-size: 11px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 140ms; }
+    .copy-btn:hover { background: rgba(45,212,191,0.15); }
+    .copy-btn.copied { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: var(--green); }
+    .panel-close { width: 26px; height: 26px; border-radius: 6px; background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .notes-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .notes-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: var(--text-3); font-size: 12px; text-align: center; gap: 10px; }
+    .note-item { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-soft); margin-bottom: 6px; cursor: pointer; transition: background 120ms; }
+    .note-item:hover { background: var(--surface-2); }
+    .note-item-head { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+    .note-num { width: 16px; height: 16px; border-radius: 50%; background: var(--amber); color: #0d0d11; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .note-screen-tag { font-size: 10px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+    .note-text { font-size: 12px; color: var(--text-1); line-height: 1.4; }
+    .notes-toggle { position: fixed; bottom: 24px; right: 24px; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px; background: var(--elevated); border: 1px solid var(--border); color: var(--text-1); font-size: 13px; font-weight: 500; cursor: pointer; z-index: 149; box-shadow: 0 4px 20px rgba(0,0,0,0.45); font-family: 'DM Sans', sans-serif; transition: all 140ms; }
+    .notes-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .notes-count-badge { background: var(--amber); color: #0d0d11; font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+    .highlight-ring { outline: 2px solid var(--accent) !important; outline-offset: 2px; border-radius: 4px; }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0; background: var(--elevated); border: 1px solid var(--border); padding: 10px 20px; border-radius: 10px; font-size: 13px; color: var(--text-1); transition: all 200ms; z-index: 999; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<!-- Proto nav -->
+<div class="proto-nav">
+  <span class="proto-label">PROTOTYPE</span>
+  <span class="proto-sep">|</span>
+  Screen:
+  <select id="screenSelect" onchange="switchScreen(this.value)">
+    <option value="reading">1 — Reading view</option>
+    <option value="editor">2 — Editor mode</option>
+    <option value="map">3 — Map view</option>
+  </select>
+  <span class="proto-sep">|</span>
+  <span class="proto-hint">Click any element to annotate · Notes panel → bottom right</span>
+</div>
+
+<div class="app-shell">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-brand" title="HQ"><div class="logo-42">42</div></div>
+    <span class="topbar-app-label">Knowledge Base</span>
+    <div class="topbar-search">
+      <div class="search-trigger" onclick="openSearch()">
+        <i data-lucide="search" style="width:14px;height:14px;flex-shrink:0;"></i>
+        Search everything...
+        <span class="search-shortcut">⌘K</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-map-btn" onclick="switchScreen('map');setSelect('map')">
+        <i data-lucide="share-2" style="width:13px;height:13px;"></i>
+        Map
+      </button>
+      <button class="icon-btn" onclick="openSettings()" title="Settings">
+        <i data-lucide="settings" style="width:16px;height:16px;"></i>
+      </button>
+      <button class="icon-btn" onclick="toggleThemeIcon()" title="Toggle theme" id="theme-btn">
+        <i data-lucide="sun" style="width:16px;height:16px;"></i>
+      </button>
+      <div class="topbar-avatar" title="Simon Paynter">SP</div>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <!-- Rail -->
+    <div class="rail">
+      <div class="rail-item active" title="IT &amp; Projects" onclick="selectRail(this)"><i data-lucide="monitor" style="width:18px;height:18px;"></i></div>
+      <div class="rail-item" title="Personal" onclick="selectRail(this)"><i data-lucide="user" style="width:18px;height:18px;"></i></div>
+      <div class="rail-item" title="Work" onclick="selectRail(this)"><i data-lucide="briefcase" style="width:18px;height:18px;"></i></div>
+      <div class="rail-item" title="Learning" onclick="selectRail(this)"><i data-lucide="book-open" style="width:18px;height:18px;"></i></div>
+      <div class="rail-spacer"></div>
+      <div class="rail-add" title="Add workspace"><i data-lucide="plus" style="width:16px;height:16px;"></i></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-head">
+        <span class="sidebar-ws-name">IT &amp; Projects</span>
+        <button class="icon-btn" style="width:24px;height:24px;" title="Collapse"><i data-lucide="panel-left-close" style="width:14px;height:14px;"></i></button>
+      </div>
+      <div class="sidebar-scroll">
+        <!-- Claude section -->
+        <div class="section-group" id="sg-claude">
+          <div class="section-head" onclick="toggleSection('sg-claude')">
+            <i data-lucide="bot" style="width:14px;height:14px;flex-shrink:0;"></i>
+            Claude
+            <i data-lucide="chevron-down" style="width:12px;height:12px;" class="section-chevron"></i>
+          </div>
+          <div class="section-pages">
+            <div class="page-item p1" onclick="selectPage(this)"><i data-lucide="file-text" style="width:12px;height:12px;flex-shrink:0;"></i> Overview</div>
+            <div class="page-item p1" onclick="toggleChildren('skills-ch', this)">
+              <i data-lucide="file-text" style="width:12px;height:12px;flex-shrink:0;"></i>
+              Skills
+              <i data-lucide="chevron-down" style="width:11px;height:11px;margin-left:auto;color:var(--text-3);"></i>
+            </div>
+            <div id="skills-ch">
+              <div class="page-item p2 active" onclick="selectPage(this)"><i data-lucide="zap" style="width:11px;height:11px;flex-shrink:0;"></i> simon-context</div>
+              <div class="page-item p2" onclick="selectPage(this)"><i data-lucide="zap" style="width:11px;height:11px;flex-shrink:0;"></i> app-scaffold</div>
+              <div class="page-item p2" onclick="selectPage(this)"><i data-lucide="zap" style="width:11px;height:11px;flex-shrink:0;"></i> infra-context</div>
+              <div class="page-item p2" onclick="selectPage(this)"><i data-lucide="zap" style="width:11px;height:11px;flex-shrink:0;"></i> nas-ops</div>
+            </div>
+            <div class="page-item p1" onclick="toggleChildren('agents-ch', this)">
+              <i data-lucide="file-text" style="width:12px;height:12px;flex-shrink:0;"></i>
+              Agents
+              <i data-lucide="chevron-down" style="width:11px;height:11px;margin-left:auto;color:var(--text-3);"></i>
+            </div>
+            <div id="agents-ch">
+              <div class="page-item p2" onclick="selectPage(this)"><i data-lucide="cpu" style="width:11px;height:11px;flex-shrink:0;"></i> researcher</div>
+              <div class="page-item p2" onclick="selectPage(this)"><i data-lucide="cpu" style="width:11px;height:11px;flex-shrink:0;"></i> builder</div>
+            </div>
+            <div class="page-item p1" onclick="selectPage(this)"><i data-lucide="settings-2" style="width:12px;height:12px;flex-shrink:0;"></i> Setup &amp; Config</div>
+            <div class="page-item p1" onclick="selectPage(this)"><i data-lucide="scroll-text" style="width:12px;height:12px;flex-shrink:0;"></i> Session Log</div>
+          </div>
+        </div>
+        <!-- Projects section -->
+        <div class="section-group closed" id="sg-projects">
+          <div class="section-head" onclick="toggleSection('sg-projects')">
+            <i data-lucide="layout-grid" style="width:14px;height:14px;flex-shrink:0;"></i>
+            Projects
+            <i data-lucide="chevron-down" style="width:12px;height:12px;" class="section-chevron"></i>
+          </div>
+          <div class="section-pages">
+            <div class="page-item p1" onclick="selectPage(this)"><i data-lucide="file-text" style="width:12px;height:12px;flex-shrink:0;"></i> Knowledge Base</div>
+            <div class="page-item p1" onclick="selectPage(this)"><i data-lucide="file-text" style="width:12px;height:12px;flex-shrink:0;"></i> Lifeboard</div>
+            <div class="page-item p1" onclick="selectPage(this)"><i data-lucide="file-text" style="width:12px;height:12px;flex-shrink:0;"></i> Job Application</div>
+          </div>
+        </div>
+        <!-- Infrastructure section -->
+        <div class="section-group closed" id="sg-infra">
+          <div class="section-head" onclick="toggleSection('sg-infra')">
+            <i data-lucide="server" style="width:14px;height:14px;flex-shrink:0;"></i>
+            Infrastructure
+            <i data-lucide="chevron-down" style="width:12px;height:12px;" class="section-chevron"></i>
+          </div>
+          <div class="section-pages">
+            <div class="page-item p1" onclick="selectPage(this)">QNAP NAS</div>
+            <div class="page-item p1" onclick="selectPage(this)">Network</div>
+            <div class="page-item p1" onclick="selectPage(this)">Cloudflare</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-foot">
+        <div class="sidebar-add-btn"><i data-lucide="plus" style="width:13px;height:13px;"></i> Add section</div>
+      </div>
+    </div>
+
+    <!-- Content pane -->
+    <div class="content-pane">
+
+      <!-- Screen 1: Reading -->
+      <div class="screen active" id="screen-reading">
+        <div class="reading-scroll">
+          <div class="breadcrumb">
+            <span class="bc-link">IT &amp; Projects</span>
+            <span class="breadcrumb-sep">›</span>
+            <span class="bc-link">Claude</span>
+            <span class="breadcrumb-sep">›</span>
+            <span class="bc-link">Skills</span>
+            <span class="breadcrumb-sep">›</span>
+            <span class="bc-current">simon-context</span>
+          </div>
+          <div class="page-title-row">
+            <h1 class="page-title">simon-context</h1>
+            <div class="page-btn-group">
+              <button class="btn-edit" onclick="switchScreen('editor');setSelect('editor')">
+                <i data-lucide="pencil" style="width:13px;height:13px;"></i> Edit
+              </button>
+              <div class="btn-more" onclick="showCtxMenu(event)">
+                <i data-lucide="more-horizontal" style="width:14px;height:14px;"></i>
+              </div>
+            </div>
+          </div>
+          <div class="page-meta">
+            <span class="badge badge-active"><i data-lucide="circle" style="width:7px;height:7px;"></i> active</span>
+            <span class="badge badge-skill"><i data-lucide="zap" style="width:7px;height:7px;"></i> skill</span>
+            <span class="badge badge-global">global</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-text">v1.4</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-text">Updated 2026-02-27</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-text">by claude</span>
+          </div>
+          <div class="divider"></div>
+          <div class="page-body">
+            <p>The <code>simon-context</code> skill provides Claude with a complete working profile of Simon Paynter — cognitive style, communication preferences, execution framework, and product context. It loads at the start of every session via the global CLAUDE.md.</p>
+            <h2>Purpose</h2>
+            <p>Claude starts each session without memory of previous interactions. This skill solves the context-rebuild problem by encoding Simon's stable working preferences as a structured reference that Claude reads before doing anything else.</p>
+            <p>Without it, Claude defaults to generic behaviour: verbose explanations, corporate tone, no knowledge of how Simon thinks or what he has already built.</p>
+            <h2>Coverage</h2>
+            <ul>
+              <li><strong>User context</strong> — Name, location, role, primary domains</li>
+              <li><strong>Cognitive style</strong> — ADHD, dyslexia, architectural thinking, execution preferences</li>
+              <li><strong>Communication preferences</strong> — Plain language, no jargon, direct tone</li>
+              <li><strong>Execution framework</strong> — How to help when stuck, how to sequence work</li>
+              <li><strong>Technical context</strong> — Tools, platforms, current projects, infrastructure</li>
+              <li><strong>Response format</strong> — Structure, heading use, step size, table preference</li>
+              <li><strong>Session-end protocol</strong> — Planning doc updates, skill gap checks, docs folder updates</li>
+            </ul>
+            <h2>Change log</h2>
+            <p>This skill is updated at the end of any session where preferences, tools, or context meaningfully changed. Changes are versioned in <code>asset_versions</code>.</p>
+            <h3>Recent changes</h3>
+            <ul>
+              <li><strong>v1.4</strong> — 2026-02-27 — Added Knowledge Base to project list; updated session-end protocol</li>
+              <li><strong>v1.3</strong> — 2026-02-20 — Expanded response format guidelines; added cognitive load notes</li>
+              <li><strong>v1.2</strong> — 2026-01-15 — Added Lifeboard project; updated tool preferences</li>
+            </ul>
+          </div>
+          <!-- Asset panel -->
+          <div class="asset-panel">
+            <div class="asset-panel-head" onclick="toggleAssets()">
+              <div class="asset-panel-head-left">
+                <i data-lucide="paperclip" style="width:14px;height:14px;"></i>
+                Assets <span class="asset-count">(3)</span>
+              </div>
+              <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-3);" id="asset-chevron"></i>
+            </div>
+            <div class="asset-panel-body" id="asset-body">
+              <div class="asset-row">
+                <i data-lucide="zap" style="width:14px;height:14px;" class="asset-icon"></i>
+                <div style="flex:1;"><div class="asset-name">SKILL.md</div><div class="asset-meta">skill · v1.4 · 2026-02-27</div></div>
+                <span class="badge badge-active" style="font-size:10px;">current</span>
+              </div>
+              <div class="asset-row">
+                <i data-lucide="clipboard-list" style="width:14px;height:14px;" class="asset-icon"></i>
+                <div><div class="asset-name">2026-02-20 — Response format decision</div><div class="asset-meta">decision · 2026-02-20</div></div>
+              </div>
+              <div class="asset-row">
+                <i data-lucide="scroll-text" style="width:14px;height:14px;" class="asset-icon"></i>
+                <div><div class="asset-name">Session log — 2026-02-27</div><div class="asset-meta">session · 2026-02-27 · by claude</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen 2: Editor -->
+      <div class="screen" id="screen-editor">
+        <div class="editor-bar">
+          <button class="btn-secondary" style="padding:6px 10px;" onclick="switchScreen('reading');setSelect('reading')"><i data-lucide="arrow-left" style="width:13px;height:13px;"></i></button>
+          <input class="editor-title" value="simon-context" placeholder="Page title...">
+          <div class="editor-actions">
+            <label class="draft-toggle">
+              <div class="toggle" id="draft-toggle" onclick="this.classList.toggle('on');updateDraftLabel()"><div class="toggle-knob"></div></div>
+              &nbsp;<span id="draft-label" style="color:var(--text-3)">Published</span>
+            </label>
+            <button class="btn-secondary"><i data-lucide="paperclip" style="width:13px;height:13px;"></i> Assets</button>
+            <button class="btn-primary" onclick="showToast()">Save</button>
+          </div>
+        </div>
+        <div class="editor-breadcrumb">
+          <span>IT &amp; Projects</span><span style="color:var(--border)">›</span>
+          <span>Claude</span><span style="color:var(--border)">›</span>
+          <span>Skills</span><span style="color:var(--border)">›</span>
+          <span style="color:var(--text-2)">simon-context</span>
+        </div>
+        <div class="editor-split">
+          <div class="editor-left">
+            <div class="editor-toolbar">
+              <button class="tool-btn">H1</button>
+              <button class="tool-btn">H2</button>
+              <button class="tool-btn"><strong>B</strong></button>
+              <button class="tool-btn"><em>I</em></button>
+              <button class="tool-btn">—</button>
+              <button class="tool-btn">` `</button>
+              <button class="tool-btn">Link</button>
+              <button class="tool-btn">Image</button>
+              <button class="tool-btn" style="margin-left:auto;"><i data-lucide="maximize-2" style="width:11px;height:11px;"></i></button>
+            </div>
+            <textarea class="editor-textarea">The `simon-context` skill provides Claude with a complete working profile of Simon Paynter — cognitive style, communication preferences, execution framework, and product context. It loads at the start of every session via the global CLAUDE.md.
+
+## Purpose
+
+Claude starts each session without memory of previous interactions. This skill solves the context-rebuild problem by encoding Simon's stable working preferences as a structured reference that Claude reads before doing anything else.
+
+Without it, Claude defaults to generic behaviour: verbose explanations, corporate tone, no knowledge of how Simon thinks or what he has already built.
+
+## Coverage
+
+- **User context** — Name, location, role, primary domains
+- **Cognitive style** — ADHD, dyslexia, architectural thinking, execution preferences
+- **Communication preferences** — Plain language, no jargon, direct tone
+- **Execution framework** — How to help when stuck, how to sequence work
+- **Technical context** — Tools, platforms, current projects, infrastructure
+- **Response format** — Structure, heading use, step size, table preference
+- **Session-end protocol** — Planning doc updates, skill gap checks, docs folder updates
+
+## Change log
+
+This skill is updated at the end of any session where preferences, tools, or context meaningfully changed. Changes are versioned in `asset_versions`.</textarea>
+            <div class="editor-foot">
+              <i data-lucide="check-circle" style="width:12px;height:12px;color:var(--green);"></i>
+              <span class="autosave" id="autosave-label">Auto-saved 30s ago</span>
+            </div>
+          </div>
+          <div class="editor-right">
+            <div class="preview-label">Preview</div>
+            <div class="page-body">
+              <p>The <code>simon-context</code> skill provides Claude with a complete working profile of Simon Paynter — cognitive style, communication preferences, execution framework, and product context. It loads at the start of every session via the global CLAUDE.md.</p>
+              <h2>Purpose</h2>
+              <p>Claude starts each session without memory of previous interactions. This skill solves the context-rebuild problem by encoding Simon's stable working preferences as a structured reference that Claude reads before doing anything else.</p>
+              <p>Without it, Claude defaults to generic behaviour: verbose explanations, corporate tone, no knowledge of how Simon thinks or what he has already built.</p>
+              <h2>Coverage</h2>
+              <ul>
+                <li><strong>User context</strong> — Name, location, role, primary domains</li>
+                <li><strong>Cognitive style</strong> — ADHD, dyslexia, architectural thinking, execution preferences</li>
+                <li><strong>Communication preferences</strong> — Plain language, no jargon, direct tone</li>
+                <li><strong>Execution framework</strong> — How to help when stuck, how to sequence work</li>
+                <li><strong>Technical context</strong> — Tools, platforms, current projects, infrastructure</li>
+                <li><strong>Response format</strong> — Structure, heading use, step size, table preference</li>
+                <li><strong>Session-end protocol</strong> — Planning doc updates, skill gap checks, docs folder updates</li>
+              </ul>
+              <h2>Change log</h2>
+              <p>This skill is updated at the end of any session where preferences, tools, or context meaningfully changed. Changes are versioned in <code>asset_versions</code>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen 3: Map -->
+      <div class="screen" id="screen-map">
+        <div class="map-scroll">
+          <h1 class="map-title">Relationship Map</h1>
+          <p class="map-sub">Every asset connection across the environment. Claude writes these relationships as part of normal documentation. Filter to explore.</p>
+          <div class="map-filters">
+            <span class="filter-label">Filter:</span>
+            <select class="filter-select"><option>All asset types</option><option>skill</option><option>agent</option><option>config</option><option>session</option><option>decision</option></select>
+            <select class="filter-select"><option>All relationship types</option><option>loads</option><option>uses</option><option>generates</option><option>deploys-to</option><option>connects-to</option><option>supersedes</option></select>
+            <select class="filter-select"><option>All projects</option><option>Knowledge Base</option><option>Lifeboard</option><option>Job Application</option></select>
+            <button class="btn-secondary" style="padding:6px 12px;font-size:12px;margin-left:auto;"><i data-lucide="plus" style="width:12px;height:12px;"></i> Add relationship</button>
+          </div>
+          <table class="rel-table">
+            <thead><tr><th>From</th><th>Relationship</th><th>To</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="cpu" style="width:12px;height:12px;color:var(--text-3);"></i> researcher</span><span class="asset-type-tag">agent</span></td>
+                <td><span class="rel-badge loads">loads</span></td>
+                <td><span class="rel-asset"><i data-lucide="zap" style="width:12px;height:12px;color:var(--text-3);"></i> simon-context</span><span class="asset-type-tag">skill</span></td>
+                <td class="rel-notes">Loaded via global CLAUDE.md at session start</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="cpu" style="width:12px;height:12px;color:var(--text-3);"></i> researcher</span><span class="asset-type-tag">agent</span></td>
+                <td><span class="rel-badge loads">loads</span></td>
+                <td><span class="rel-asset"><i data-lucide="zap" style="width:12px;height:12px;color:var(--text-3);"></i> infra-context</span><span class="asset-type-tag">skill</span></td>
+                <td class="rel-notes">Stack awareness for infrastructure work</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="cpu" style="width:12px;height:12px;color:var(--text-3);"></i> researcher</span><span class="asset-type-tag">agent</span></td>
+                <td><span class="rel-badge loads">loads</span></td>
+                <td><span class="rel-asset"><i data-lucide="zap" style="width:12px;height:12px;color:var(--text-3);"></i> nas-ops</span><span class="asset-type-tag">skill</span></td>
+                <td class="rel-notes">NAS container operations reference</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="cpu" style="width:12px;height:12px;color:var(--text-3);"></i> builder</span><span class="asset-type-tag">agent</span></td>
+                <td><span class="rel-badge loads">loads</span></td>
+                <td><span class="rel-asset"><i data-lucide="zap" style="width:12px;height:12px;color:var(--text-3);"></i> code-quality</span><span class="asset-type-tag">skill</span></td>
+                <td class="rel-notes">Coding standards applied silently</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="cpu" style="width:12px;height:12px;color:var(--text-3);"></i> builder</span><span class="asset-type-tag">agent</span></td>
+                <td><span class="rel-badge loads">loads</span></td>
+                <td><span class="rel-asset"><i data-lucide="zap" style="width:12px;height:12px;color:var(--text-3);"></i> nas-deploy</span><span class="asset-type-tag">skill</span></td>
+                <td class="rel-notes">Loaded conditionally for NAS work</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="box" style="width:12px;height:12px;color:var(--text-3);"></i> knowledge-base app</span><span class="asset-type-tag">config</span></td>
+                <td><span class="rel-badge deploys-to">deploys-to</span></td>
+                <td><span class="rel-asset"><i data-lucide="server" style="width:12px;height:12px;color:var(--text-3);"></i> QNAP NAS</span><span class="asset-type-tag">infrastructure</span></td>
+                <td class="rel-notes">Container Station + Watchtower, kb.ss-42.com</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="box" style="width:12px;height:12px;color:var(--text-3);"></i> n8n</span><span class="asset-type-tag">service</span></td>
+                <td><span class="rel-badge connects-to">connects-to</span></td>
+                <td><span class="rel-asset"><i data-lucide="database" style="width:12px;height:12px;color:var(--text-3);"></i> n8n-postgres</span><span class="asset-type-tag">database</span></td>
+                <td class="rel-notes">10.0.3.12:5432, database: nocodb</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="scroll-text" style="width:12px;height:12px;color:var(--text-3);"></i> 2026-02-27 session</span><span class="asset-type-tag">session</span></td>
+                <td><span class="rel-badge generates">generates</span></td>
+                <td><span class="rel-asset"><i data-lucide="clipboard-list" style="width:12px;height:12px;color:var(--text-3);"></i> KB redesign decision</span><span class="asset-type-tag">decision</span></td>
+                <td class="rel-notes">Design spec approved, Gate 3 prototype review</td>
+              </tr>
+              <tr>
+                <td><span class="rel-asset"><i data-lucide="zap" style="width:12px;height:12px;color:var(--text-3);"></i> simon-context v1.4</span><span class="asset-type-tag">skill</span></td>
+                <td><span class="rel-badge supersedes">supersedes</span></td>
+                <td><span class="rel-asset"><i data-lucide="zap" style="width:12px;height:12px;color:var(--text-3);"></i> simon-context v1.3</span><span class="asset-type-tag">skill</span></td>
+                <td class="rel-notes">KB added, session-end protocol expanded</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:20px;">
+            <button class="btn-secondary" style="font-size:12px;"><i data-lucide="plus" style="width:12px;height:12px;"></i> Add relationship</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- content-pane -->
+  </div><!-- app-body -->
+</div><!-- app-shell -->
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu" style="display:none;">
+  <div class="ctx-item"><i data-lucide="file-plus" style="width:13px;height:13px;color:var(--text-3);"></i> Add child page</div>
+  <div class="ctx-item"><i data-lucide="pencil" style="width:13px;height:13px;color:var(--text-3);"></i> Rename</div>
+  <div class="ctx-item"><i data-lucide="move" style="width:13px;height:13px;color:var(--text-3);"></i> Move</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item danger"><i data-lucide="trash-2" style="width:13px;height:13px;"></i> Delete</div>
+</div>
+
+<!-- Search overlay -->
+<div class="search-overlay" id="search-overlay" onclick="closeSearch(event)">
+  <div class="search-modal" onclick="event.stopPropagation()">
+    <div class="search-input-row">
+      <i data-lucide="search" style="width:16px;height:16px;color:var(--text-3);flex-shrink:0;"></i>
+      <input class="search-field" id="search-input" placeholder="Search pages, assets, sessions...">
+      <span class="search-esc" onclick="closeSearchDirect()">Esc</span>
+    </div>
+    <div class="search-filters">
+      <div class="filter-chip active" onclick="selectChip(this)">All</div>
+      <div class="filter-chip" onclick="selectChip(this)">Pages</div>
+      <div class="filter-chip" onclick="selectChip(this)">Skills</div>
+      <div class="filter-chip" onclick="selectChip(this)">Sessions</div>
+      <div class="filter-chip" onclick="selectChip(this)">Decisions</div>
+    </div>
+    <div class="search-results">
+      <div class="result-item sel">
+        <div class="result-title">simon-context</div>
+        <div class="result-path">IT &amp; Projects › Claude › Skills › simon-context</div>
+        <div class="result-excerpt">The <mark>simon-context</mark> skill provides Claude with a complete working profile of Simon Paynter — cognitive style, communication...</div>
+      </div>
+      <div class="result-item">
+        <div class="result-title">2026-02-27 — Knowledge Base redesign session</div>
+        <div class="result-path">IT &amp; Projects › Claude › Session Log</div>
+        <div class="result-excerpt">Gate 3 prototype review completed. Design spec approved. skill gap checks done for <mark>simon-context</mark>, infra-context, nas-ops...</div>
+      </div>
+      <div class="result-item">
+        <div class="result-title">infra-context</div>
+        <div class="result-path">IT &amp; Projects › Claude › Skills › infra-context</div>
+        <div class="result-excerpt">Full stack and deployment awareness — databases, networking, external access, existing services across the <mark>Simon</mark> Paynter environment...</div>
+      </div>
+      <div class="result-item">
+        <div class="result-title">Response format decision — 2026-02-20</div>
+        <div class="result-path">IT &amp; Projects › Claude › Skills › simon-context › Assets</div>
+        <div class="result-excerpt">Agreed to use DM Sans for UI, Lora for reading content. Serif body font makes documentation feel intentional rather than clinical...</div>
+      </div>
+      <div class="result-item">
+        <div class="result-title">QNAP NAS — Container Station config</div>
+        <div class="result-path">IT &amp; Projects › Infrastructure › QNAP NAS</div>
+        <div class="result-excerpt">Container registry: ghcr.io/sspaynter. Watchtower auto-pulls on latest tag. Internal network: 10.0.3.0/24. Postgres at 10.0.3.12:5432...</div>
+      </div>
+    </div>
+    <div class="search-footer">
+      <span class="search-hint"><kbd>↑↓</kbd> navigate</span>
+      <span class="search-hint"><kbd>↵</kbd> open</span>
+      <span class="search-hint"><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<!-- Settings overlay -->
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettings(event)">
+  <div class="settings-modal" onclick="event.stopPropagation()">
+    <div class="settings-nav">
+      <div class="sn-label">Configuration</div>
+      <div class="sn-item active" onclick="selectSettingsNav(this,'ws-panel')"><i data-lucide="layout-grid" style="width:14px;height:14px;flex-shrink:0;"></i> Workspaces</div>
+      <div class="sn-item" onclick="selectSettingsNav(this,'users-panel')"><i data-lucide="users" style="width:14px;height:14px;flex-shrink:0;"></i> Users &amp; Roles</div>
+      <div class="sn-item" onclick="selectSettingsNav(this,'tokens-panel')"><i data-lucide="key" style="width:14px;height:14px;flex-shrink:0;"></i> API Tokens</div>
+      <div class="sn-item" onclick="selectSettingsNav(this,'hq-panel')"><i data-lucide="link" style="width:14px;height:14px;flex-shrink:0;"></i> HQ URL</div>
+      <div class="sn-label" style="margin-top:8px;">Account</div>
+      <div class="sn-item" onclick="selectSettingsNav(this,'theme-panel')"><i data-lucide="sun" style="width:14px;height:14px;flex-shrink:0;"></i> Theme</div>
+      <div class="sn-item" onclick="selectSettingsNav(this,'account-panel')"><i data-lucide="user" style="width:14px;height:14px;flex-shrink:0;"></i> User Account</div>
+      <div style="flex:1;"></div>
+      <div class="sn-item danger" onclick="selectSettingsNav(this,'danger-panel')"><i data-lucide="alert-triangle" style="width:14px;height:14px;flex-shrink:0;"></i> Danger Zone</div>
+    </div>
+    <div class="settings-body">
+      <div id="ws-panel">
+        <div class="settings-title">Workspaces</div>
+        <div class="token-card"><i data-lucide="monitor" style="width:14px;height:14px;color:var(--text-3);"></i><span class="token-name">IT &amp; Projects</span><span class="token-date">4 sections · 23 pages</span><span class="token-revoke">Rename</span></div>
+        <div class="token-card"><i data-lucide="user" style="width:14px;height:14px;color:var(--text-3);"></i><span class="token-name">Personal</span><span class="token-date">2 sections · 8 pages</span><span class="token-revoke">Rename</span></div>
+        <div class="token-card"><i data-lucide="briefcase" style="width:14px;height:14px;color:var(--text-3);"></i><span class="token-name">Work</span><span class="token-date">3 sections · 15 pages</span><span class="token-revoke">Rename</span></div>
+        <div class="token-card"><i data-lucide="book-open" style="width:14px;height:14px;color:var(--text-3);"></i><span class="token-name">Learning</span><span class="token-date">1 section · 5 pages</span><span class="token-revoke">Rename</span></div>
+        <div style="margin-top:12px;"><button class="btn-secondary" style="font-size:12px;"><i data-lucide="plus" style="width:12px;height:12px;"></i> Add workspace</button></div>
+      </div>
+      <div id="users-panel" style="display:none;">
+        <div class="settings-title">Users &amp; Roles</div>
+        <div class="token-card"><div class="topbar-avatar" style="flex-shrink:0;">SP</div><span class="token-name">Simon Paynter</span><span class="badge badge-active" style="font-size:10px;">Admin</span><span class="token-date">You</span></div>
+        <div style="margin-top:16px;"><button class="btn-secondary" style="font-size:12px;"><i data-lucide="user-plus" style="width:12px;height:12px;"></i> Invite user</button></div>
+        <div style="margin-top:20px;padding:14px;background:var(--elevated);border-radius:10px;font-size:12px;color:var(--text-3);line-height:1.6;"><strong style="color:var(--text-2);">Roles:</strong> Admin — full access. Editor — read/write all content. Viewer — read-only published pages. Role scope is per-instance in v1.</div>
+      </div>
+      <div id="tokens-panel" style="display:none;">
+        <div class="settings-title">API Tokens</div>
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.5;">Claude sessions authenticate with bearer tokens. Create one token per integration or session type.</div>
+        <div class="token-card"><i data-lucide="key" style="width:14px;height:14px;color:var(--text-3);"></i><span class="token-name">Claude sessions</span><span class="token-date">Last used 2026-02-27</span><span class="token-revoke">Revoke</span></div>
+        <div style="margin-top:12px;"><button class="btn-secondary" style="font-size:12px;"><i data-lucide="plus" style="width:12px;height:12px;"></i> Create token</button></div>
+      </div>
+      <div id="hq-panel" style="display:none;">
+        <div class="settings-title">HQ URL</div>
+        <div class="settings-row"><div><div class="s-row-label">HQ Hub URL</div><div class="s-row-desc">The 42 logo links here. Must be a locally-hosted subdomain.</div></div><input class="settings-input" value="https://hq.ss-42.com" type="url"></div>
+        <div style="margin-top:16px;"><button class="btn-primary" style="font-size:13px;">Save</button></div>
+      </div>
+      <div id="theme-panel" style="display:none;">
+        <div class="settings-title">Theme</div>
+        <div class="settings-row"><div><div class="s-row-label">Colour scheme</div><div class="s-row-desc">Also available via the toggle in the top bar.</div></div><select class="settings-input" style="width:140px;"><option>Dark</option><option>Light</option><option>System</option></select></div>
+      </div>
+      <div id="account-panel" style="display:none;">
+        <div class="settings-title">User Account</div>
+        <div class="settings-row"><div><div class="s-row-label">Display name</div></div><input class="settings-input" value="Simon Paynter"></div>
+        <div class="settings-row"><div><div class="s-row-label">Change password</div></div><button class="btn-secondary" style="font-size:12px;">Change password</button></div>
+      </div>
+      <div id="danger-panel" style="display:none;">
+        <div class="settings-title" style="color:var(--red);">Danger Zone</div>
+        <div class="settings-row"><div><div class="s-row-label">Export all data</div><div class="s-row-desc">Download a full JSON export of all workspaces, pages, and assets.</div></div><button class="btn-secondary" style="font-size:12px;">Export</button></div>
+        <div class="settings-row"><div><div class="s-row-label" style="color:var(--red);">Reset knowledge base</div><div class="s-row-desc">Delete all content. Cannot be undone.</div></div><button style="padding:7px 14px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--red);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Reset</button></div>
+      </div>
+    </div>
+    <div class="modal-x" onclick="closeSettingsDirect()"><i data-lucide="x" style="width:13px;height:13px;"></i></div>
+  </div>
+</div>
+
+<!-- Annotation popup -->
+<div class="ann-popup" id="ann-popup" style="display:none;">
+  <div class="ann-popup-label">Annotating: <span id="ann-el-label" style="color:var(--accent);"></span></div>
+  <input class="ann-input" id="ann-input" placeholder="Type a note and press Enter..." onkeydown="handleAnnKey(event)">
+  <div class="ann-popup-btns">
+    <button class="btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="dismissAnn()">Cancel</button>
+    <button class="btn-primary" style="padding:4px 12px;font-size:12px;" onclick="saveAnn()">Save</button>
+  </div>
+</div>
+
+<!-- Annotation tooltip -->
+<div class="ann-tooltip" id="ann-tooltip" style="display:none;"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Saved</div>
+
+<!-- Notes panel -->
+<div class="notes-panel" id="notes-panel">
+  <div class="notes-panel-head">
+    <span class="notes-panel-title">Annotations <span id="note-count" style="color:var(--text-3);font-weight:400;">(0)</span></span>
+    <div class="notes-actions">
+      <button class="copy-btn" id="copy-btn" onclick="copyAnnotations()">
+        <i data-lucide="copy" style="width:12px;height:12px;"></i>
+        Copy feedback
+      </button>
+      <div class="panel-close" onclick="toggleNotes()">
+        <i data-lucide="x" style="width:12px;height:12px;"></i>
+      </div>
+    </div>
+  </div>
+  <div class="notes-list" id="notes-list">
+    <div class="notes-empty" id="notes-empty">
+      <i data-lucide="mouse-pointer-click" style="width:28px;height:28px;color:var(--border);"></i>
+      <span>No annotations yet</span>
+      <span style="color:var(--text-3);font-size:11px;">Click any element to annotate it</span>
+    </div>
+  </div>
+</div>
+
+<!-- Notes toggle -->
+<button class="notes-toggle" onclick="toggleNotes()">
+  <i data-lucide="message-square-plus" style="width:16px;height:16px;"></i>
+  Annotations
+  <span class="notes-count-badge" id="toggle-badge" style="display:none;">0</span>
+</button>
+
+<script>
+lucide.createIcons();
+document.getElementById('skills-ch').style.display = 'block';
+document.getElementById('agents-ch').style.display = 'block';
+
+// ── Screen switching ──
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById('screen-' + name);
+  if (s) s.classList.add('active');
+}
+function setSelect(val) { document.getElementById('screenSelect').value = val; }
+
+// ── Sidebar ──
+function toggleSection(id) { document.getElementById(id).classList.toggle('closed'); }
+function toggleChildren(id, par) {
+  const el = document.getElementById(id);
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  const ch = par.querySelector('[data-lucide="chevron-down"]');
+  if (ch) ch.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+function selectPage(el) {
+  document.querySelectorAll('.page-item').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectRail(el) {
+  document.querySelectorAll('.rail-item').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Asset panel ──
+let assetOpen = true;
+function toggleAssets() {
+  assetOpen = !assetOpen;
+  document.getElementById('asset-body').style.display = assetOpen ? 'block' : 'none';
+  document.getElementById('asset-chevron').style.transform = assetOpen ? 'rotate(0)' : 'rotate(-90deg)';
+}
+
+// ── Search ──
+function openSearch() {
+  document.getElementById('search-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('search-input').focus(), 50);
+}
+function closeSearch(e) { document.getElementById('search-overlay').classList.remove('open'); }
+function closeSearchDirect() { document.getElementById('search-overlay').classList.remove('open'); }
+function selectChip(el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Settings ──
+function openSettings() { document.getElementById('settings-overlay').classList.add('open'); }
+function closeSettings(e) { document.getElementById('settings-overlay').classList.remove('open'); }
+function closeSettingsDirect() { document.getElementById('settings-overlay').classList.remove('open'); }
+function selectSettingsNav(el, panelId) {
+  document.querySelectorAll('.sn-item').forEach(i => i.classList.remove('active'));
+  if (!el.classList.contains('danger')) el.classList.add('active');
+  ['ws-panel','users-panel','tokens-panel','hq-panel','theme-panel','account-panel','danger-panel'].forEach(p => {
+    const panel = document.getElementById(p);
+    if (panel) panel.style.display = p === panelId ? 'block' : 'none';
+  });
+}
+
+// ── Context menu ──
+function showCtxMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('ctx-menu');
+  menu.style.display = 'block';
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  lucide.createIcons();
+  setTimeout(() => document.addEventListener('click', () => { menu.style.display = 'none'; }, { once: true }), 10);
+}
+
+// ── Theme icon toggle ──
+function toggleThemeIcon() {
+  const btn = document.getElementById('theme-btn');
+  const icon = btn.querySelector('i');
+  icon.setAttribute('data-lucide', icon.getAttribute('data-lucide') === 'sun' ? 'moon' : 'sun');
+  lucide.createIcons();
+}
+
+// ── Editor ──
+function updateDraftLabel() {
+  const on = document.getElementById('draft-toggle').classList.contains('on');
+  document.getElementById('draft-label').textContent = on ? 'Draft' : 'Published';
+}
+
+// ── Toast ──
+function showToast() {
+  const t = document.getElementById('toast');
+  t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; }, 2000);
+}
+
+// ── Keyboard ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSearchDirect(); closeSettingsDirect(); dismissAnn(); document.getElementById('ann-tooltip').style.display = 'none'; }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+});
+
+// ════════════════════════════════════
+// ANNOTATION SYSTEM (safe DOM methods)
+// ════════════════════════════════════
+let annotations = [];
+let annCounter = 0;
+let pendingTarget = null;
+let pendingDesc = '';
+
+function getDesc(el) {
+  const attrs = [el.getAttribute('aria-label'), el.getAttribute('title'), el.getAttribute('placeholder')];
+  for (const a of attrs) { if (a && a.trim().length > 1) return a.trim().slice(0,60); }
+  const text = (el.textContent || '').trim().replace(/\s+/g,' ');
+  if (text.length > 1) return text.slice(0,60);
+  return el.tagName.toLowerCase();
+}
+
+function currentScreen() {
+  const active = document.querySelector('.screen.active');
+  if (!active) return 'Reading view';
+  const map = { 'screen-reading':'Reading view', 'screen-editor':'Editor mode', 'screen-map':'Map view' };
+  return map[active.id] || 'Unknown';
+}
+
+document.addEventListener('click', e => {
+  if (e.target.closest('#ann-popup')) return;
+  if (e.target.closest('.ann-badge')) return;
+  if (e.target.closest('#notes-panel')) return;
+  if (e.target.closest('.notes-toggle')) return;
+  if (e.target.closest('.proto-nav')) return;
+  if (e.target.closest('.ctx-menu')) return;
+  if (e.target.closest('#search-overlay')) return;
+  if (e.target.closest('#settings-overlay')) return;
+  if (e.target.closest('#ann-tooltip')) return;
+  if (e.target.closest('#toast')) return;
+  if (e.target === document.body || e.target === document.documentElement) return;
+
+  dismissAnn();
+  document.getElementById('ann-tooltip').style.display = 'none';
+
+  pendingTarget = e.target;
+  pendingDesc = getDesc(e.target);
+  showAnnPopup(e.clientX, e.clientY, pendingDesc);
+}, true);
+
+function showAnnPopup(cx, cy, desc) {
+  const popup = document.getElementById('ann-popup');
+  // Use textContent — safe, no XSS risk
+  const labelEl = document.getElementById('ann-el-label');
+  labelEl.textContent = desc.length > 40 ? desc.slice(0,40) + '...' : desc;
+  document.getElementById('ann-input').value = '';
+  let left = cx + 14, top = cy + 8;
+  if (left + 296 > window.innerWidth) left = cx - 310;
+  if (top + 150 > window.innerHeight) top = cy - 160;
+  popup.style.left = left + 'px';
+  popup.style.top = top + 'px';
+  popup.style.display = 'block';
+  setTimeout(() => document.getElementById('ann-input').focus(), 40);
+}
+
+function dismissAnn() {
+  document.getElementById('ann-popup').style.display = 'none';
+  pendingTarget = null;
+}
+
+function handleAnnKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveAnn(); } }
+
+function saveAnn() {
+  const text = document.getElementById('ann-input').value.trim();
+  if (!text || !pendingTarget) { dismissAnn(); return; }
+  annCounter++;
+  const ann = { id: annCounter, screen: currentScreen(), desc: pendingDesc, text, target: pendingTarget, badge: null };
+
+  // Badge using DOM — safe
+  const badge = document.createElement('div');
+  badge.className = 'ann-badge';
+  badge.textContent = String(ann.id); // textContent, not innerHTML
+  badge.dataset.annId = ann.id;
+  badge.addEventListener('click', ev => { ev.stopPropagation(); showAnnTooltip(badge, ann.id); });
+
+  if (getComputedStyle(pendingTarget).position === 'static') {
+    pendingTarget.style.position = 'relative';
+  }
+  pendingTarget.appendChild(badge);
+  ann.badge = badge;
+
+  annotations.push(ann);
+  dismissAnn();
+  renderNotesList();
+}
+
+function showAnnTooltip(badge, id) {
+  const ann = annotations.find(a => a.id === id);
+  if (!ann) return;
+  const tooltip = document.getElementById('ann-tooltip');
+  // Build tooltip with DOM — safe
+  tooltip.textContent = ''; // clear
+  const numSpan = document.createElement('span');
+  numSpan.className = 'ann-num';
+  numSpan.textContent = String(ann.id);
+  tooltip.appendChild(numSpan);
+  tooltip.appendChild(document.createTextNode(ann.text));
+  tooltip.style.display = 'block';
+  const rect = badge.getBoundingClientRect();
+  let left = rect.right + 8;
+  let top = rect.top;
+  if (left + 260 > window.innerWidth) left = rect.left - 268;
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  setTimeout(() => { document.addEventListener('click', () => { tooltip.style.display = 'none'; }, { once: true }); }, 100);
+}
+
+// Build notes list with DOM — safe, no innerHTML with user content
+function renderNotesList() {
+  const list = document.getElementById('notes-list');
+  const empty = document.getElementById('notes-empty');
+  const countEl = document.getElementById('note-count');
+  const badge = document.getElementById('toggle-badge');
+
+  countEl.textContent = '(' + annotations.length + ')';
+  badge.textContent = String(annotations.length);
+  badge.style.display = annotations.length > 0 ? 'flex' : 'none';
+
+  // Clear list
+  while (list.firstChild) list.removeChild(list.firstChild);
+
+  if (annotations.length === 0) {
+    list.appendChild(empty);
+    return;
+  }
+
+  // Group by screen
+  const byScreen = {};
+  annotations.forEach(a => {
+    if (!byScreen[a.screen]) byScreen[a.screen] = [];
+    byScreen[a.screen].push(a);
+  });
+
+  Object.entries(byScreen).forEach(([screen, anns]) => {
+    const screenLabel = document.createElement('div');
+    screenLabel.style.cssText = "font-size:10px;color:var(--text-3);font-family:'JetBrains Mono',monospace;padding:8px 4px 4px;text-transform:uppercase;letter-spacing:0.4px;";
+    screenLabel.textContent = screen;
+    list.appendChild(screenLabel);
+
+    anns.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'note-item';
+      item.addEventListener('click', () => jumpToAnn(a.id));
+
+      const head = document.createElement('div');
+      head.className = 'note-item-head';
+
+      const numDiv = document.createElement('div');
+      numDiv.className = 'note-num';
+      numDiv.textContent = String(a.id);
+
+      const descSpan = document.createElement('span');
+      descSpan.className = 'note-screen-tag';
+      descSpan.textContent = a.desc.length > 30 ? a.desc.slice(0,30) + '…' : a.desc;
+
+      head.appendChild(numDiv);
+      head.appendChild(descSpan);
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'note-text';
+      textDiv.textContent = a.text; // textContent — safe
+
+      item.appendChild(head);
+      item.appendChild(textDiv);
+      list.appendChild(item);
+    });
+  });
+
+  lucide.createIcons();
+}
+
+function jumpToAnn(id) {
+  const ann = annotations.find(a => a.id === id);
+  if (!ann) return;
+  const map = { 'Reading view':'reading', 'Editor mode':'editor', 'Map view':'map' };
+  const sid = map[ann.screen];
+  if (sid) { switchScreen(sid); setSelect(sid); }
+  setTimeout(() => {
+    if (ann.target) {
+      ann.target.scrollIntoView({ behavior:'smooth', block:'center' });
+      ann.target.classList.add('highlight-ring');
+      setTimeout(() => ann.target.classList.remove('highlight-ring'), 1800);
+    }
+  }, 150);
+}
+
+function toggleNotes() {
+  document.getElementById('notes-panel').classList.toggle('open');
+  renderNotesList();
+}
+
+function copyAnnotations() {
+  if (annotations.length === 0) return;
+  const byScreen = {};
+  annotations.forEach(a => {
+    if (!byScreen[a.screen]) byScreen[a.screen] = [];
+    byScreen[a.screen].push(a);
+  });
+  let out = '';
+  Object.entries(byScreen).forEach(([screen, anns]) => {
+    out += 'Screen: ' + screen + '\n';
+    anns.forEach(a => { out += '[' + a.id + '] ' + a.desc + ' — "' + a.text + '"\n'; });
+    out += '\n';
+  });
+  navigator.clipboard.writeText(out.trim()).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.classList.add('copied');
+    // Use DOM to update button content safely
+    btn.textContent = '';
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', 'check');
+    icon.style.cssText = 'width:12px;height:12px;';
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode(' Copied!'));
+    lucide.createIcons();
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '';
+      const icon2 = document.createElement('i');
+      icon2.setAttribute('data-lucide', 'copy');
+      icon2.style.cssText = 'width:12px;height:12px;';
+      btn.appendChild(icon2);
+      btn.appendChild(document.createTextNode(' Copy feedback'));
+      lucide.createIcons();
+    }, 2200);
+  });
+}
+</script>
+</body>
+</html>
