@@ -5,6 +5,31 @@ All notable changes to the Knowledge Base project will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-03-05
+
+### Added
+- API-first vault sync — POST /api/pages/by-path upserts pages from raw markdown with frontmatter, auto-creates workspaces and sections from path
+- Bulk export endpoint — GET /api/pages/export with optional `?since=` incremental filter
+- Push script (kb-sync.sh) — push a single vault file to the KB API immediately after writing
+- Pull script (kb-pull.sh) — pull updated pages from the KB API to local vault at session start
+- LAN auto-detection in sync scripts — uses NAS directly when on home network, falls back to Cloudflare
+- Cloudflare Access bypass for /api/* paths (app-level Bearer token auth still applies)
+- chokidar suppressPath prevents double-processing when the API writes vault files
+- 15 new tests — 10 by-path, 5 export (134 total across 18 suites)
+
+### Changed
+- Service worker cache version bumped (kb-cache-v1 → kb-cache-v2) to force browser asset refresh
+
+### Security
+- kb_app DB user: DELETE revoked on api_tokens and users tables (principle of least privilege)
+- Path traversal protection on by-path endpoint (rejects `..` and absolute paths)
+
+### Infrastructure
+- Vault directory ownership set to container user (UID 100) on staging and production
+- kb_app DB user granted full CRUD on knowledge_base schema (was missing page_versions)
+
+[2.1.0]: https://github.com/sspaynter/knowledge-base/releases/tag/v2.1.0
+
 ## [2.0.1] - 2026-03-04
 
 ### Added
