@@ -11,6 +11,18 @@ const { inferLocationFromPath, findOrCreateSection, slugify, suppressPath } = re
 
 router.use(requireAuth);
 
+// GET /api/pages/resolve?path=vault/path (no .md extension required)
+// Resolution order: file_path → slug → previous_paths (ADR-010)
+router.get('/resolve', async (req, res, next) => {
+  try {
+    const pathOrSlug = req.query.path;
+    if (!pathOrSlug) return res.status(400).json({ error: 'path query parameter is required' });
+    const page = await pages.resolvePage(pathOrSlug);
+    if (!page) return res.status(404).json({ error: 'Page not found' });
+    res.json(page);
+  } catch (err) { next(err); }
+});
+
 // GET /api/pages/by-path?path=relative/path.md
 // Looks up by current file_path, then falls back to previous_paths.
 router.get('/by-path', async (req, res, next) => {
@@ -289,6 +301,15 @@ router.get('/:id/versions', async (req, res, next) => {
   try {
     const versions = await pages.getPageVersions(req.params.id);
     res.json(versions);
+  } catch (err) { next(err); }
+});
+
+// GET /api/pages/:id/versions/:versionId — get single version with content
+router.get('/:id/versions/:versionId', async (req, res, next) => {
+  try {
+    const version = await pages.getPageVersion(req.params.id, req.params.versionId);
+    if (!version) return res.status(404).json({ error: 'Version not found' });
+    res.json(version);
   } catch (err) { next(err); }
 });
 
