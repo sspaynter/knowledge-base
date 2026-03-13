@@ -5,6 +5,18 @@ All notable changes to the Knowledge Base project will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-03-13
+
+### Added
+- Dead link indicators — after markdown renders, `/page/` links are checked via the resolve API; unresolvable links get red strikethrough styling (#59)
+- Version history viewer — slide-in panel from page header clock icon, lists all versions with timestamps and change summaries (#115)
+- Version content preview — click any version to see read-only rendered content
+- Version restore — one-click restore with confirmation dialog, creates a new version entry
+- GET /api/pages/:id/versions/:versionId — new endpoint returning single version with full content
+- 7 new backend tests covering resolve endpoint and version CRUD/restore
+
+[2.2.0]: https://github.com/sspaynter/knowledge-base/releases/tag/v2.2.0
+
 ## [2.1.1] - 2026-03-05
 
 ### Fixed
