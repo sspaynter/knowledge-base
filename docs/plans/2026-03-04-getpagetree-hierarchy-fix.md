@@ -41,7 +41,9 @@ function buildTree(rows, parentId = null) {
 
 ---
 
-## Task 1: Fix getPageTree — return flat rows directly
+## Task 1: Fix getPageTree — return flat rows directly — COMPLETED (session 51)
+
+Removed `buildTree()` function entirely. `getPageTree()` returns `res.rows` directly. Staging and production verified — nested pages render correctly in sidebar.
 
 - **spec:** this document § Bug Description
 - **files:** `services/pages.js` (MODIFY — lines 13–28)

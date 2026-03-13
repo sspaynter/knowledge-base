@@ -51,10 +51,11 @@ export function renderPage(page) {
   pane.appendChild(view);
   window.lucide.createIcons();
 
-  // Render Mermaid diagrams after content is in the DOM
+  // Render Mermaid diagrams after content is in the DOM, then mark dead links
   renderMermaidBlocks(view).then(() => {
     window.lucide.createIcons(); // Re-render icons for toolbar buttons
     setupClickToEdit(view, page);
+    markDeadLinks(view);
   });
 }
 
@@ -116,6 +117,16 @@ function buildHeader(page) {
     import('./editor.js').then(m => m.openEditor(page));
   });
 
+  const historyBtn = document.createElement('button');
+  historyBtn.className = 'btn btn--ghost btn--sm';
+  const historyIcon = document.createElement('i');
+  historyIcon.setAttribute('data-lucide', 'clock');
+  historyIcon.setAttribute('aria-hidden', 'true');
+  historyBtn.appendChild(historyIcon);
+  historyBtn.appendChild(document.createTextNode(' History'));
+  historyBtn.addEventListener('click', () => toggleVersionPanel(page));
+
+  actions.appendChild(historyBtn);
   actions.appendChild(editBtn);
   header.appendChild(title);
   header.appendChild(actions);
@@ -345,6 +356,146 @@ function replaceMermaidBlock(content, originalSource, newSource) {
   const result = content.replace(pattern, replacement);
   // If no match found, return content unchanged
   return result;
+}
+
+// ── Version history panel ────────────────────
+async function toggleVersionPanel(page) {
+  const existing = document.querySelector('.version-panel');
+  if (existing) { existing.remove(); return; }
+
+  const panel = document.createElement('aside');
+  panel.className = 'version-panel';
+  panel.setAttribute('aria-label', 'Version history');
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'version-panel__header';
+  const title = document.createElement('span');
+  title.className = 'version-panel__title';
+  title.textContent = 'Version History';
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn--ghost btn--sm';
+  closeBtn.textContent = '\u00d7';
+  closeBtn.addEventListener('click', () => panel.remove());
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+  panel.appendChild(header);
+
+  // Fetch and render version list
+  try {
+    const versions = await api.getPageVersions(page.id);
+    if (!versions.length) {
+      const empty = document.createElement('p');
+      empty.className = 'version-panel__empty';
+      empty.textContent = 'No version history yet.';
+      panel.appendChild(empty);
+    } else {
+      const list = document.createElement('div');
+      list.className = 'version-list';
+      versions.forEach(v => list.appendChild(buildVersionRow(v, page, panel)));
+      panel.appendChild(list);
+    }
+  } catch {
+    const err = document.createElement('p');
+    err.textContent = 'Failed to load version history.';
+    panel.appendChild(err);
+  }
+
+  pane.appendChild(panel);
+  window.lucide.createIcons();
+}
+
+function buildVersionRow(version, page, panel) {
+  const row = document.createElement('div');
+  row.className = 'version-row';
+
+  const time = document.createElement('span');
+  time.className = 'version-row__time';
+  time.textContent = formatDate(version.created_at);
+
+  const summary = document.createElement('span');
+  summary.className = 'version-row__summary';
+  summary.textContent = version.change_summary || 'No summary';
+
+  const author = document.createElement('span');
+  author.className = 'badge';
+  author.textContent = version.changed_by || 'unknown';
+
+  row.appendChild(time);
+  row.appendChild(summary);
+  row.appendChild(author);
+  row.addEventListener('click', () => showVersionContent(version, page, panel));
+  return row;
+}
+
+async function showVersionContent(version, page, panel) {
+  if (!panel) return;
+
+  // Remove any existing content view
+  panel.querySelector('.version-content')?.remove();
+
+  const view = document.createElement('div');
+  view.className = 'version-content';
+
+  // Back button
+  const backBtn = document.createElement('button');
+  backBtn.className = 'btn btn--ghost btn--sm';
+  backBtn.textContent = '\u2190 Back to list';
+  backBtn.addEventListener('click', () => view.remove());
+  view.appendChild(backBtn);
+
+  // Fetch full version content
+  try {
+    const full = await api.getPageVersion(page.id, version.id);
+    const body = document.createElement('div');
+    body.className = 'article-body version-content__body';
+    setMarkdownContent(body, full.content || '');
+    view.appendChild(body);
+  } catch {
+    const err = document.createElement('p');
+    err.textContent = 'Failed to load version content.';
+    view.appendChild(err);
+  }
+
+  // Restore button
+  const restoreBtn = document.createElement('button');
+  restoreBtn.className = 'btn btn--primary btn--sm';
+  restoreBtn.textContent = 'Restore this version';
+  restoreBtn.addEventListener('click', async () => {
+    if (!confirm('Restore this version? Current content will be saved as a new version.')) return;
+    try {
+      await api.restorePageVersion(page.id, version.id);
+      panel.remove();
+      // Re-fetch and render the updated page
+      const updated = await api.getPage(page.id);
+      renderPage(updated);
+      toastSuccess('Version restored');
+    } catch (err) {
+      toastError('Restore failed: ' + err.message);
+    }
+  });
+  view.appendChild(restoreBtn);
+
+  panel.appendChild(view);
+  window.lucide.createIcons();
+}
+
+// ── Dead link detection (ADR-010) ────────────
+// After markdown renders, check all /page/ links and mark unresolvable ones.
+async function markDeadLinks(container) {
+  const links = container.querySelectorAll('a[href^="/page/"]');
+  const checks = Array.from(links).map(async (link) => {
+    const href = link.getAttribute('href');
+    const hashIdx = href.indexOf('#');
+    const pagePath = hashIdx >= 0 ? href.slice(6, hashIdx) : href.slice(6);
+    try {
+      await api.resolvePage(decodeURIComponent(pagePath));
+    } catch {
+      link.classList.add('dead-link');
+      link.title = 'Page not found: ' + decodeURIComponent(pagePath);
+    }
+  });
+  await Promise.allSettled(checks);
 }
 
 // ── Asset detail ─────────────────────────────

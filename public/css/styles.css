@@ -560,6 +560,13 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
 .article-body ul { list-style: disc; }
 .article-body ol { list-style: decimal; }
 .article-body a  { color: var(--accent); }
+.article-body a.dead-link {
+  color: var(--red);
+  text-decoration: line-through;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.article-body a.dead-link:hover { opacity: 1; }
 .article-body blockquote {
   border-left: 3px solid var(--accent);
   padding: var(--sp-1) 0 var(--sp-1) var(--sp-4);
@@ -629,6 +636,59 @@ i[data-lucide] { display: inline-flex; width: 16px; height: 16px; }
 .asset-row__icon { color: var(--text-3); flex-shrink: 0; }
 .asset-row__name { font-size: 13px; font-weight: 500; }
 .asset-row__meta { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-3); margin-left: auto; }
+
+/* ── Version history panel ────────────────── */
+.version-panel {
+  position: fixed;
+  top: var(--topbar-h);
+  right: 0;
+  bottom: 0;
+  width: 360px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 50;
+  overflow-y: auto;
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-lg);
+  animation: slideInRight 0.2s ease-out;
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+.version-panel__header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--border-soft);
+}
+.version-panel__title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.version-panel__empty { font-size: 13px; color: var(--text-3); font-style: italic; }
+.version-row {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--sp-3) var(--sp-2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--t-fast);
+  border-bottom: 1px solid var(--border-soft);
+}
+.version-row:hover { background: var(--surface-2); }
+.version-row__time { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-3); }
+.version-row__summary { font-size: 13px; color: var(--text-2); }
+.version-content {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.version-content__body {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--sp-3);
+  background: var(--elevated);
+  border-radius: var(--r-md);
+  margin: var(--sp-3) 0;
+  font-size: 14px;
+}
 
 /* ── 8. OVERLAYS ──────────────────────────── */
 .overlay {

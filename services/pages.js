@@ -81,6 +81,49 @@ async function getPageByPath(filePath) {
   return page;
 }
 
+// ── Resolve page by vault path or slug ───────────────────
+// Used by deep-linking and inter-page link resolution (ADR-010).
+// Resolution order: file_path → slug → previous_paths.
+async function resolvePage(pathOrSlug) {
+  const pool = getPool();
+
+  // Normalize: strip .md if present
+  const normalized = pathOrSlug.endsWith('.md') ? pathOrSlug.slice(0, -3) : pathOrSlug;
+  const filePath = normalized + '.md';
+
+  // Try 1: file_path exact match
+  let res = await pool.query(`
+    SELECT p.id, p.title, p.slug, p.file_path, p.section_id, s.workspace_id
+    FROM ${SCHEMA}.pages p
+    JOIN ${SCHEMA}.sections s ON s.id = p.section_id
+    WHERE p.file_path = $1 AND p.deleted_at IS NULL
+  `, [filePath]);
+  if (res.rows.length > 0) return res.rows[0];
+
+  // Try 2: slug match (last segment if path has slashes, otherwise full string)
+  const slug = normalized.includes('/') ? normalized.split('/').pop() : normalized;
+  res = await pool.query(`
+    SELECT p.id, p.title, p.slug, p.file_path, p.section_id, s.workspace_id
+    FROM ${SCHEMA}.pages p
+    JOIN ${SCHEMA}.sections s ON s.id = p.section_id
+    WHERE p.slug = $1 AND p.deleted_at IS NULL
+    ORDER BY p.updated_at DESC
+    LIMIT 1
+  `, [slug]);
+  if (res.rows.length > 0) return res.rows[0];
+
+  // Try 3: previous_paths
+  res = await pool.query(`
+    SELECT p.id, p.title, p.slug, p.file_path, p.section_id, s.workspace_id
+    FROM ${SCHEMA}.pages p
+    JOIN ${SCHEMA}.sections s ON s.id = p.section_id
+    WHERE p.previous_paths @> $1::jsonb AND p.deleted_at IS NULL
+  `, [JSON.stringify(filePath)]);
+  if (res.rows.length > 0) return res.rows[0];
+
+  return null;
+}
+
 // ── Three-layer content fallback ──────────────────────────
 // 1. Vault file (if file_path set and vault enabled) — strip frontmatter
 // 2. content_cache (synced copy in DB) — already stripped at sync time
@@ -372,6 +415,16 @@ async function getPageVersions(pageId) {
   return res.rows;
 }
 
+// ── Get a single version with content ────────────────────
+async function getPageVersion(pageId, versionId) {
+  const res = await getPool().query(`
+    SELECT id, page_id, content, change_summary, changed_by, created_at
+    FROM ${SCHEMA}.page_versions
+    WHERE id = $1 AND page_id = $2
+  `, [versionId, pageId]);
+  return res.rows[0] || null;
+}
+
 // ── Restore a specific version ─────────────────────────────
 async function restorePageVersion(pageId, versionId) {
   const pool = getPool();
@@ -464,8 +517,8 @@ function slugify(str) {
 }
 
 module.exports = {
-  getPageTree, getPage, getPageByPath,
+  getPageTree, getPage, getPageByPath, resolvePage,
   createPage, updatePage, movePage, reorderPages, deletePage,
-  getPageVersions, restorePageVersion,
+  getPageVersions, getPageVersion, restorePageVersion,
   createPageVersion,
 };

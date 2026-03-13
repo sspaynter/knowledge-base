@@ -333,3 +333,111 @@ test('GET /api/pages/export returns 400 for invalid since timestamp', async () =
   expect(res.status).toBe(400);
   expect(res.body.error).toMatch(/invalid/i);
 });
+
+// ── GET /api/pages/resolve tests ─────────────────────────
+
+test('GET /api/pages/resolve returns 404 for nonexistent path', async () => {
+  const res = await request(app)
+    .get('/api/pages/resolve?path=nonexistent/path/here')
+    .set('Authorization', bearer);
+  expect(res.status).toBe(404);
+  expect(res.body.error).toBe('Page not found');
+});
+
+test('GET /api/pages/resolve returns 400 without path param', async () => {
+  const res = await request(app)
+    .get('/api/pages/resolve')
+    .set('Authorization', bearer);
+  expect(res.status).toBe(400);
+});
+
+// ── Version endpoint tests ───────────────────────────────
+
+test('GET /api/pages/:id/versions returns version list', async () => {
+  const create = await request(app)
+    .post('/api/pages')
+    .set('Authorization', bearer)
+    .send({ section_id: sectionId, title: 'Version List Test', slug: 'version-list-test', content: '# V1' });
+  const pageId = create.body.id;
+
+  const res = await request(app)
+    .get(`/api/pages/${pageId}/versions`)
+    .set('Authorization', bearer);
+  expect(res.status).toBe(200);
+  expect(Array.isArray(res.body)).toBe(true);
+  expect(res.body.length).toBeGreaterThanOrEqual(1);
+});
+
+test('GET /api/pages/:id/versions/:versionId returns version with content', async () => {
+  const create = await request(app)
+    .post('/api/pages')
+    .set('Authorization', bearer)
+    .send({ section_id: sectionId, title: 'Version Content Test', slug: 'version-content-test', content: '# Version Content' });
+  const pageId = create.body.id;
+
+  // Get version list to find the version ID
+  const listRes = await request(app)
+    .get(`/api/pages/${pageId}/versions`)
+    .set('Authorization', bearer);
+  const versionId = listRes.body[0].id;
+
+  const res = await request(app)
+    .get(`/api/pages/${pageId}/versions/${versionId}`)
+    .set('Authorization', bearer);
+  expect(res.status).toBe(200);
+  expect(res.body.content).toBeDefined();
+  expect(Number(res.body.page_id)).toBe(pageId);
+});
+
+test('GET /api/pages/:id/versions/:versionId returns 404 for nonexistent version', async () => {
+  const create = await request(app)
+    .post('/api/pages')
+    .set('Authorization', bearer)
+    .send({ section_id: sectionId, title: 'Version 404 Test', slug: 'version-404-test', content: '# Test' });
+
+  const res = await request(app)
+    .get(`/api/pages/${create.body.id}/versions/999999`)
+    .set('Authorization', bearer);
+  expect(res.status).toBe(404);
+  expect(res.body.error).toBe('Version not found');
+});
+
+test('POST /api/pages/:id/versions/:versionId/restore restores content', async () => {
+  const create = await request(app)
+    .post('/api/pages')
+    .set('Authorization', bearer)
+    .send({ section_id: sectionId, title: 'Restore Test', slug: 'restore-test', content: '# Original' });
+  const pageId = create.body.id;
+
+  // Update content to create a second version
+  await request(app)
+    .patch(`/api/pages/${pageId}`)
+    .set('Authorization', bearer)
+    .send({ content: '# Updated' });
+
+  // Get the first version (oldest)
+  const listRes = await request(app)
+    .get(`/api/pages/${pageId}/versions`)
+    .set('Authorization', bearer);
+  const oldestVersion = listRes.body[listRes.body.length - 1];
+
+  // Restore it
+  const res = await request(app)
+    .post(`/api/pages/${pageId}/versions/${oldestVersion.id}/restore`)
+    .set('Authorization', bearer);
+  expect(res.status).toBe(200);
+});
+
+test('GET /api/pages/resolve returns page for valid slug', async () => {
+  // Create a page to resolve
+  const create = await request(app)
+    .post('/api/pages')
+    .set('Authorization', bearer)
+    .send({ section_id: sectionId, title: 'Resolve Test', slug: 'resolve-test', content: '# Resolve' });
+
+  const res = await request(app)
+    .get('/api/pages/resolve?path=resolve-test')
+    .set('Authorization', bearer);
+  expect(res.status).toBe(200);
+  expect(res.body.id).toBe(create.body.id);
+});

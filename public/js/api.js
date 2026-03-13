@@ -55,12 +55,18 @@ export const deleteSection = (id)         => request('DELETE', `/api/workspaces/
 
 // Pages — Note: list route is GET /api/pages/section/:sectionId (not /api/sections/:id/pages)
 export const listPages  = (sectionId)  => request('GET',    `/api/pages/section/${sectionId}`);
+export const resolvePage = (pathOrSlug) => request('GET',    `/api/pages/resolve?path=${encodeURIComponent(pathOrSlug)}`);
 export const getPage    = (id)         => request('GET',    `/api/pages/${id}`);
 export const createPage = (body)       => request('POST',   '/api/pages',         body);
 export const updatePage = (id, body)   => request('PATCH',  `/api/pages/${id}`,   body);
 export const deletePage = (id)         => request('DELETE', `/api/pages/${id}`);
 export const movePage      = (id, body)   => request('PATCH',  `/api/pages/${id}/move`, body);
 export const reorderPages = (items)      => request('PATCH',  '/api/pages/reorder', { items });
+
+// Page Versions
+export const getPageVersions    = (pageId)             => request('GET',  `/api/pages/${pageId}/versions`);
+export const getPageVersion     = (pageId, versionId)  => request('GET',  `/api/pages/${pageId}/versions/${versionId}`);
+export const restorePageVersion = (pageId, versionId)  => request('POST', `/api/pages/${pageId}/versions/${versionId}/restore`);
 
 // Assets
 export const listAssets  = (params = {}) => {
