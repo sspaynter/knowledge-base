@@ -31,6 +31,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Markdown rendering | Live | marked + DOMPurify pipeline; no innerHTML anywhere |
 | Breadcrumb navigation | Live | Workspace › Section › Page |
 | Previous paths fallback | Live | GET /api/pages/by-path checks previous_paths JSONB |
+| Dead link indicators | Live | v2.2.0 — after markdown render, `/page/` links checked via resolve API; broken links get red strikethrough (#59) |
 | Syntax highlighting | Not built | Deferred |
 
 ### Editing and authoring
@@ -41,7 +42,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Split-view mode (edit + preview) | Live | CSS toggle, no JS layout recalc |
 | Source-only mode | Live | Toggle between split and source |
 | Vault-first writes | Live | createPage, updatePage, movePage all write .md file first |
-| Page version history | Live | 50-version cap per page, restore endpoint |
+| Page version history | Live | 50-version cap per page, restore endpoint. v2.2.0: version history viewer UI — slide-in panel, content preview, one-click restore (#115) |
 | Mermaid live preview in editor | Live | 500ms debounce, rerenderDiagram via DOMParser |
 | Insert Diagram picker | Live | 7 pre-populated templates with dropdown picker |
 | Click-to-edit Mermaid in reading view | Live | Inline editor panel, live preview, writes back to content |
@@ -180,7 +181,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Migration script tests | Live | 20 tests: schema idempotency, seed idempotency, GENERATED ALWAYS AS behaviour, helper functions |
 | npm test CI gate | Live | GitHub Actions: test job (Postgres service) gates build job — fail fast on test failures |
 | .dockerignore | Live | Excludes node_modules, tests, vault, docs from build context |
-| Production deploy | Live | v2.1.1 deployed to kb.ss-42.com — latest: session 50 |
+| Production deploy | Live | v2.2.0 deployed to kb.ss-42.com — latest: session 72 |
 
 ---
 
@@ -213,6 +214,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | 40 | #13 + UI | Drag-to-reorder: native HTML5 DnD in sidebar, PATCH /api/pages/reorder bulk endpoint (transactional), vault frontmatter updated on reorder, 4 new API tests. Version number in rail UI. package.json → 2.0.0. Global CLAUDE.md vault writing instructions added. |
 | 48 | v2.1.0 | API-first vault sync (POST /api/pages/by-path, GET /api/pages/export), kb-sync.sh/kb-pull.sh scripts, LAN auto-detection, CF Access bypass for /api/*, 134 tests (18 suites). |
 | 50 | v2.1.1 | getPageTree flat array fix (#46) — sidebar renders nested pages correctly. SESSION_SECRET aligned across staging and production (#47). |
+| 72 | v2.2.0 | KB Usability Sprint 1 — dead link indicators (#59), version history viewer (#115). 7 new tests, new GET /api/pages/:id/versions/:versionId endpoint. |
 
 ---
 
