@@ -21,14 +21,18 @@ COPY middleware/ ./middleware/
 COPY services/ ./services/
 COPY scripts/ ./scripts/
 
+# Install su-exec for privilege drop in entrypoint
+RUN apk add --no-cache su-exec
+
 # Create uploads and vault directories with correct ownership
 ENV UPLOAD_DIR=/app/uploads
 ENV VAULT_DIR=/app/vault
 ENV CHOKIDAR_USEPOLLING=true
 RUN mkdir -p /app/uploads /app/vault && chown -R app:app /app
 
-# Switch to non-root user
-USER app
+# Entrypoint fixes volume ownership then drops to app user
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
 EXPOSE 3000
 
@@ -36,4 +40,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]
