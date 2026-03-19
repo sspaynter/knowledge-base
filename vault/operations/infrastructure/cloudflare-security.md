@@ -26,6 +26,46 @@ Cloudflare Access adds authentication to public-facing services. Visitors must a
 | n8n Webhook Bypass | `n8n.ss-42.com/webhook` | Webhook endpoints without login | Bypass (everyone) |
 | SS42 HQ | `hq.ss-42.com` | Internal hub | Cloudflare Access login |
 | Lifeboard | `lifeboard.ss-42.com` | Kanban board | Cloudflare Access login |
+| SSA Staging | `ssa-staging.ss-42.com` | SSA website staging environment | Email OTP (Simon only) |
+
+### Staging Environment Access Pattern
+
+All staging sites should be behind Cloudflare Access to prevent public exposure of pre-release content and internal infrastructure details (staging URLs, debug output, test data).
+
+**Standard policy:** Email OTP restricted to `paynter.simon@gmail.com`. Session duration: 24 hours.
+
+**Current staging sites:**
+
+| Staging site | Access protected | Notes |
+|---|---|---|
+| `ssa-staging.ss-42.com` | Yes | Email OTP, added 2026-03-19 |
+| `kb-staging.ss-42.com` | No | Should be added |
+| `applyr-staging.ss-42.com` | No | Should be added |
+
+When creating a new staging container, add Cloudflare Access as part of the setup — not as a follow-up task.
+
+**API call to create staging Access app:**
+```bash
+eval "$(ssh nas 'cat /share/Container/shared-secrets.env' | grep '^CF_')"
+ACCOUNT_ID="722ec3ccd21b7b067b6a75a679b4bbf0"
+
+# Create app
+APP_ID=$(curl -s -X POST \
+  -H "X-Auth-Email: $CF_AUTH_EMAIL" \
+  -H "X-Auth-Key: $CF_GLOBAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "{Name} Staging", "domain": "{name}-staging.ss-42.com", "type": "self_hosted", "session_duration": "24h"}' \
+  "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/access/apps" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['id'])")
+
+# Create email OTP policy
+curl -s -X POST \
+  -H "X-Auth-Email: $CF_AUTH_EMAIL" \
+  -H "X-Auth-Key: $CF_GLOBAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Allow Simon (email OTP)", "decision": "allow", "include": [{"email": {"email": "paynter.simon@gmail.com"}}], "precedence": 1}' \
+  "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/access/apps/$APP_ID/policies"
+```
 
 ### Access Bypass Pattern
 
