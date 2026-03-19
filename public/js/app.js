@@ -24,6 +24,7 @@ async function boot() {
   applyTheme(store.theme); // Apply persisted theme before any render
   try {
     store.user = await api.getMe();
+    api.setAuthenticated(true);
     hideAuthOverlay();
     await initApp();
   } catch (_) {
