@@ -55,9 +55,9 @@ Twelve interconnected problems drove this:
 
 ## Current state
 
-**Version:** v2.2.0 — live at `kb.ss-42.com`
+**Version:** v2.2.1 — live at `kb.ss-42.com`
 **Staging:** `kb-staging.ss-42.com`
-**Released:** 2026-03-13
+**Released:** 2026-03-19
 
 **Architecture:**
 - Vault-as-source — markdown files are source of truth, DB for metadata/search/relationships

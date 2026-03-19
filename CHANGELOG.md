@@ -5,6 +5,17 @@ All notable changes to the Knowledge Base project will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-03-19
+
+### Fixed
+- Vault directory ownership guard — container entrypoint now runs `chown -R app:app` on `/app/vault` and `/app/uploads` before dropping privileges, preventing write failures when volume-mounted directories have host-side UIDs (#234)
+
+### Changed
+- Dockerfile uses `ENTRYPOINT` with `su-exec` privilege drop instead of `USER app` + `CMD`
+- Added `su-exec` Alpine package to container image
+
+[2.2.1]: https://github.com/sspaynter/knowledge-base/releases/tag/v2.2.1
+
 ## [2.2.0] - 2026-03-13
 
 ### Added

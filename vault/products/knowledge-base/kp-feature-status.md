@@ -181,7 +181,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | Migration script tests | Live | 20 tests: schema idempotency, seed idempotency, GENERATED ALWAYS AS behaviour, helper functions |
 | npm test CI gate | Live | GitHub Actions: test job (Postgres service) gates build job — fail fast on test failures |
 | .dockerignore | Live | Excludes node_modules, tests, vault, docs from build context |
-| Production deploy | Live | v2.2.0 deployed to kb.ss-42.com — latest: session 72 |
+| Production deploy | Live | v2.2.1 deployed to kb.ss-42.com — latest: session 79 |
 
 ---
 
@@ -215,6 +215,7 @@ Implementation plan: `knowledge-base/docs/plans/2026-03-03-kb-v2-implementation-
 | 48 | v2.1.0 | API-first vault sync (POST /api/pages/by-path, GET /api/pages/export), kb-sync.sh/kb-pull.sh scripts, LAN auto-detection, CF Access bypass for /api/*, 134 tests (18 suites). |
 | 50 | v2.1.1 | getPageTree flat array fix (#46) — sidebar renders nested pages correctly. SESSION_SECRET aligned across staging and production (#47). |
 | 72 | v2.2.0 | KB Usability Sprint 1 — dead link indicators (#59), version history viewer (#115). 7 new tests, new GET /api/pages/:id/versions/:versionId endpoint. |
+| 79 | v2.2.1 | Vault ownership guard — entrypoint.sh with chown + su-exec privilege drop. Prevents UID mismatch on volume mounts (#234). |
 
 ---
 
