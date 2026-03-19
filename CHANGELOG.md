@@ -5,6 +5,18 @@ All notable changes to the Knowledge Base project will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-03-19
+
+### Fixed
+- Auth resilience — shared auth pool `max` increased from 5 to 10 connections, `connectionTimeoutMillis` from 5s to 10s, preventing pool exhaustion under concurrent requests (#207)
+- Frontend retry — `api.js` retries once on transient 401 when user was previously authenticated, before showing login overlay (#207)
+
+### Added
+- `services/request-retry.js` — extracted retry logic for testability
+- 9 new tests (pool config validation + retry behaviour)
+
+[2.2.2]: https://github.com/sspaynter/knowledge-base/releases/tag/v2.2.2
+
 ## [2.2.1] - 2026-03-19
 
 ### Fixed

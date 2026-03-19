@@ -55,7 +55,7 @@ Twelve interconnected problems drove this:
 
 ## Current state
 
-**Version:** v2.2.1 — live at `kb.ss-42.com`
+**Version:** v2.2.2 — live at `kb.ss-42.com`
 **Staging:** `kb-staging.ss-42.com`
 **Released:** 2026-03-19
 
