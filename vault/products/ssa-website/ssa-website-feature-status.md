@@ -54,10 +54,10 @@ updated: 2026-03-20
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 225 | Hero sub-line font size increase | Pending | 20px Caveat too small relative to 76px titles |
-| 226 | Background text — personal connection + dedup | Pending | |
-| 227 | Contact section sketch style + button restyle | Pending | Prototype needed |
-| 228 | Release pipeline — staging + production CI/CD | Planned | Design spec + 8-task plan validated PASS (session 21). GitHub Actions → GHCR → Watchtower. Staging at `ssa-staging.ss-42.com:8092`. |
+| 225 | Hero sub-line font size increase | Done | Caveat sub-lines increased to match visual weight of 76px titles. Session 22. |
+| 226 | Background text — personal connection + dedup | Done | Rewritten for warmth and removed duplicated phrasing. Session 22. |
+| 227 | Contact section sketch style + button restyle | Design approved | Design spec approved. KB: `contact-sketch-design.md`. Ready for build. |
+| 228 | Release pipeline — staging + production CI/CD | Done | GitHub Actions → GHCR → Watchtower. Staging at `ssa-staging.ss-42.com:8092`, production at `simonsaysautomation.com:8091`. Cloudflare Access on staging (email OTP). Session 22. |
 
 ## Polish (post-live, independent)
 
@@ -88,3 +88,4 @@ updated: 2026-03-20
 | 19 | 2026-03-19 | Build/Deploy | SEO foundations: robots.txt, OG image (Option C), OG/Twitter meta tags, canonical URL, JSON-LD structured data (Organization + ProfessionalService + Person), lang="en-AU" fix. Google Search Console verified, sitemap submitted. LinkedIn Company Page created (SSA). |
 | 20 | 2026-03-19 | Operational | Populated project CLAUDE.md. Meta description updated: "AI-powered process transformation" → "Operational redesign and automation for businesses that want to move faster." Deployed to production. LinkedIn overview text formatted with zero-width spaces for line breaks. Memory trimmed (static specs moved to CLAUDE.md). |
 | 21 | 2026-03-19 | Planning | Release pipeline (#228): design spec + 8-task implementation plan. GitHub Actions → GHCR → Watchtower. Staging at `ssa-staging.ss-42.com:8092`. Validated Cloudflare tunnel API commands (account/tunnel IDs, ingress rule insertion, DNS CNAME). Spec + plan both PASS. |
+| 22 | 2026-03-19 | Build | Release pipeline built (#228): all 8 tasks executed. GitHub repo created, CI/CD workflow, staging + production containers from GHCR, Cloudflare tunnel + DNS for staging. Repo cleanup (committed docs, removed old deployment files, .gitignore). Security audit found staging URL leak in production — fixed. Cloudflare Access added to staging (#236). |

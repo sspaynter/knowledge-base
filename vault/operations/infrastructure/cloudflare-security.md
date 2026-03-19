@@ -2,6 +2,7 @@
 author: both
 order: 100
 title: Cloudflare Security — Access, Rate Limiting, and Webhook Protection
+updated: 2026-03-19
 ---
 
 
@@ -36,11 +37,13 @@ All staging sites should be behind Cloudflare Access to prevent public exposure 
 
 **Current staging sites:**
 
-| Staging site | Access protected | Notes |
-|---|---|---|
-| `ssa-staging.ss-42.com` | Yes | Email OTP, added 2026-03-19 |
-| `kb-staging.ss-42.com` | No | Should be added |
-| `applyr-staging.ss-42.com` | No | Should be added |
+| Staging site | Access protected | App-level auth | Notes |
+|---|---|---|---|
+| `ssa-staging.ss-42.com` | Yes (email OTP) | None (static site) | Cloudflare Access is the only gate |
+| `kb-staging.ss-42.com` | No | Google login | App UI visible but data requires authentication |
+| `applyr-staging.ss-42.com` | No | Google login | App UI visible but data requires authentication |
+
+**When to require Cloudflare Access on staging:** Always add it for static sites and any app without its own authentication. Apps with Google login are lower priority — the login screen is visible but functionality is gated. Adding Access to those is optional but recommended to avoid exposing staging UI or pre-release features.
 
 When creating a new staging container, add Cloudflare Access as part of the setup — not as a follow-up task.
 
@@ -149,7 +152,9 @@ API credentials are stored in `/share/Container/shared-secrets.env` on the NAS.
 | Credential | Scope | Usage |
 |---|---|---|
 | `CF_API_TOKEN` | Tunnel Edit, DNS Edit, Access Apps Edit | Most Cloudflare operations |
-| `CF_GLOBAL_API_KEY` + `CF_AUTH_EMAIL` | Full zone access | Zone-level operations (activation checks, registrar API) |
+| `CF_GLOBAL_API_KEY` + `CF_AUTH_EMAIL` | Full account access | Tunnel config, DNS records, Access apps, zone-level operations |
+
+**Note:** `CF_API_TOKEN` lacks account-level scope for tunnel configuration. Use `CF_GLOBAL_API_KEY` + `CF_AUTH_EMAIL` for tunnel ingress rules, DNS record creation, and Access app management.
 
 Load credentials for a session:
 ```bash
