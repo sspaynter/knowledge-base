@@ -4,7 +4,7 @@ status: published
 order: 40
 author: claude
 created: 2026-03-16
-updated: 2026-03-19
+updated: 2026-03-20
 ---
 
 # SSA Website — Feature Status
@@ -50,6 +50,15 @@ updated: 2026-03-19
 | 232 | Sitemap submission | Complete | Submitted to Google Search Console (2026-03-19). Allow 3-5 days for indexing. |
 | 233 | JSON-LD structured data | Complete | Organization + ProfessionalService + Person in `baseof.html`. Session 19. |
 
+## V2 Updates
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| 225 | Hero sub-line font size increase | Pending | 20px Caveat too small relative to 76px titles |
+| 226 | Background text — personal connection + dedup | Pending | |
+| 227 | Contact section sketch style + button restyle | Pending | Prototype needed |
+| 228 | Release pipeline — staging + production CI/CD | Planned | Design spec + 8-task plan validated PASS (session 21). GitHub Actions → GHCR → Watchtower. Staging at `ssa-staging.ss-42.com:8092`. |
+
 ## Polish (post-live, independent)
 
 | # | Task | Status | Notes |
@@ -78,3 +87,4 @@ updated: 2026-03-19
 | 12 | 2026-03-18 | Build/Deploy | Site go-live: NAS deployment (10a), Cloudflare tunnel (10b), n8n webhook (#200). Fixed nginx security headers, hero image, www ingress. |
 | 19 | 2026-03-19 | Build/Deploy | SEO foundations: robots.txt, OG image (Option C), OG/Twitter meta tags, canonical URL, JSON-LD structured data (Organization + ProfessionalService + Person), lang="en-AU" fix. Google Search Console verified, sitemap submitted. LinkedIn Company Page created (SSA). |
 | 20 | 2026-03-19 | Operational | Populated project CLAUDE.md. Meta description updated: "AI-powered process transformation" → "Operational redesign and automation for businesses that want to move faster." Deployed to production. LinkedIn overview text formatted with zero-width spaces for line breaks. Memory trimmed (static specs moved to CLAUDE.md). |
+| 21 | 2026-03-19 | Planning | Release pipeline (#228): design spec + 8-task implementation plan. GitHub Actions → GHCR → Watchtower. Staging at `ssa-staging.ss-42.com:8092`. Validated Cloudflare tunnel API commands (account/tunnel IDs, ingress rule insertion, DNS CNAME). Spec + plan both PASS. |
