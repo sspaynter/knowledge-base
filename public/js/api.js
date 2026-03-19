@@ -3,6 +3,11 @@
 
 const BASE = '';
 
+// Track whether user has successfully authenticated this session.
+// If true and a 401 arrives, retry once before showing login overlay
+// (transient pool exhaustion, not a real logout — #207).
+let wasAuthenticated = false;
+
 async function request(method, path, body = null) {
   const opts = {
     method,
@@ -11,7 +16,12 @@ async function request(method, path, body = null) {
   };
   if (body !== null) opts.body = JSON.stringify(body);
 
-  const res = await fetch(BASE + path, opts);
+  let res = await fetch(BASE + path, opts);
+
+  // Retry once on transient 401 if user was previously authenticated
+  if (res.status === 401 && wasAuthenticated) {
+    res = await fetch(BASE + path, opts);
+  }
 
   if (res.status === 401) {
     import('./auth.js').then(m => m.showAuthOverlay());
@@ -23,6 +33,11 @@ async function request(method, path, body = null) {
   }
   if (res.status === 204) return null;
   return res.json();
+}
+
+/** Mark the user as authenticated (called after successful getMe). */
+export function setAuthenticated(value) {
+  wasAuthenticated = value;
 }
 
 // Expose request for ad-hoc calls (e.g. settings)

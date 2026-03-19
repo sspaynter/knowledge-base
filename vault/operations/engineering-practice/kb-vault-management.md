@@ -122,6 +122,24 @@ WHERE workspace_id = (SELECT id FROM knowledge_base.workspaces WHERE slug = 'wor
 - Commit as part of the session commit
 - Push to `dev` to trigger CI and build the staging Docker image
 
+## Git Hygiene
+
+Vault files live in the `knowledge-base` git repo. The API push (`kb-sync.sh`) is the source of truth for content — git commit is for repo hygiene only.
+
+**Why it matters:** Uncommitted vault files accumulate across sessions. When a code release needs a clean working tree, dozens of untracked vault files block the process (88 files over 6 days blocked KB v2.2.1).
+
+**Rule:** At session end, after all API pushes are done, commit vault changes:
+
+```bash
+cd ~/Documents/Claude/knowledge-base
+git add vault/
+git diff --cached --quiet || git commit -m "vault: sync session [N] changes"
+```
+
+Do not push — pushing happens with the project's normal git flow (feature branch → dev → main). The end-of-session skill (Step 5b) automates this.
+
+---
+
 ## What Chokidar Does Not Handle
 
 These always require manual DB intervention:

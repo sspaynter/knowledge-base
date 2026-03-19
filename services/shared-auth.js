@@ -12,9 +12,9 @@ const { getPool, SCHEMA } = require('./database');
 const sharedAuthPool = new Pool({
   connectionString: process.env.SHARED_AUTH_DATABASE_URL ||
     'postgresql://nocodb:nocodb2026@10.0.3.12:5432/applyr_staging',
-  max: 5,
+  max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
 });
 
 sharedAuthPool.on('error', (err) => {

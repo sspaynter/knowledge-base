@@ -204,3 +204,4 @@ lifecycle:release → PR → merge to main → tag → CHANGELOG → KB release 
 | knowledge-base | 32779 | 32780 | knowledge_base | knowledge_base_staging | v1.0.0 live, v1.1.0 planned |
 | lifeboard | 3333 | 3334 | — (SQLite) | — | In progress |
 | simonsays42 | — | — | — (static) | — | Live |
+| ssa-website | 8091 | 8092 | — (static) | — | Planned (session 21) |
